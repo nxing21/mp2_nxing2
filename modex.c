@@ -530,6 +530,49 @@ show_screen ()
     OUTW (0x03D4, ((target_img & 0x00FF) << 8) | 0x0D);
 }
 
+/*
+ * show_status_bar
+ *   DESCRIPTION: Show the status bar.
+ *   INPUTS: none
+ *   OUTPUTS: none
+ *   RETURN VALUE: none
+ *   SIDE EFFECTS: Draw status bar to the screen.
+ */   
+void
+show_status_bar ()
+{
+    unsigned char* addr;  /* source address for copy             */
+    int p_off;            /* plane offset of first display plane */
+    int i;		  /* loop index over video planes        */
+
+    /* 
+     * Calculate offset of build buffer plane to be mapped into plane 0 
+     * of display.
+     */
+    p_off = (3 - (show_x & 3));
+
+    /*
+     * The starting location is 
+     * (show_x, show_y + SCROLL_Y_WIDTH - 18)
+     */
+
+    /* Calculate the source address. */
+    addr = img3 + (show_x >> 2) + (show_y + SCROLL_Y_WIDTH - 18) * SCROLL_X_WIDTH;
+
+    /* Draw to each plane in the video memory. */
+    for (i = 0; i < 4; i++) {
+	SET_WRITE_MASK (1 << (i + 8));
+	copy_image (addr + ((p_off - i + 4) & 3) * SCROLL_SIZE + (p_off < i), 
+	            target_img);
+    }
+
+    /* 
+     * Change the VGA registers to point the top left of the screen
+     * to the video memory that we just filled.
+     */
+    OUTW (0x03D4, (target_img & 0xFF00) | 0x0C);
+    OUTW (0x03D4, ((target_img & 0x00FF) << 8) | 0x0D);
+}
 
 /*
  * clear_screens
