@@ -243,9 +243,6 @@ game_loop ()
 	    /* Draw the room calls show. */
 	    redraw_room ();
 
-		/* Draw the status bar. */
-		show_status_bar ();
-
 	    /* Only draw once on entry. */
 	    enter_room = 0;
 	}
