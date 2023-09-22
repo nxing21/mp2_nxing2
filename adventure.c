@@ -718,6 +718,9 @@ show_status (const char* s)
     /* msg_lock critical section starts here. */
     (void)pthread_mutex_lock (&msg_lock);
 
+	/* Draw the status bar. */
+	// show_status_bar ();
+
     /* Copy the new message under the protection of msg_lock. */
     strncpy (status_msg, s, STATUS_MSG_LEN);
     status_msg[STATUS_MSG_LEN] = '\0';
