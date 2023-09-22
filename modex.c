@@ -97,7 +97,7 @@ static unsigned char mode_X_attr[NUM_ATTR_REGS * 2] = {
     0x04, 0x04, 0x05, 0x05, 0x06, 0x06, 0x07, 0x07, 
     0x08, 0x08, 0x09, 0x09, 0x0A, 0x0A, 0x0B, 0x0B, 
     0x0C, 0x0C, 0x0D, 0x0D, 0x0E, 0x0E, 0x0F, 0x0F,
-    0x10, 0x41, 0x11, 0x00, 0x12, 0x0F, 0x13, 0x00,
+    0x10, 0x61, 0x11, 0x00, 0x12, 0x0F, 0x13, 0x00,
     0x14, 0x00, 0x15, 0x00
 };
 static unsigned short mode_X_graphics[NUM_GRAPHICS_REGS] = {
@@ -142,6 +142,7 @@ static void fill_palette_text ();
 static void write_font_data ();
 static void set_text_mode_3 (int clear_scr);
 static void copy_image (unsigned char* img, unsigned short scr_addr);
+static void copy_status_bar (unsigned char* img, unsigned short scr_addr);
 
 
 /* 
@@ -503,8 +504,6 @@ show_screen ()
     int p_off;            /* plane offset of first display plane */
     int i;		  /* loop index over video planes        */
 
-    unsigned char buf[5760] = {0x0000};
-
     /* 
      * Calculate offset of build buffer plane to be mapped into plane 0 
      * of display.
@@ -522,7 +521,6 @@ show_screen ()
 	SET_WRITE_MASK (1 << (i + 8));
 	copy_image (addr + ((p_off - i + 4) & 3) * SCROLL_SIZE + (p_off < i), 
 	            target_img);
-    copy_status_bar (buf, 0x0000);
     }
 
     /* 
@@ -535,16 +533,28 @@ show_screen ()
 
 /*
  * show_status_bar
- *   DESCRIPTION: Show the status bar.
+ *   DESCRIPTION: Show the status bar
  *   INPUTS: none
  *   OUTPUTS: none
  *   RETURN VALUE: none
- *   SIDE EFFECTS: Draw status bar to the screen.
+ *   SIDE EFFECTS: copies from the build buffer to video memory;
+ *                 shifts the VGA display source to point to the new image
  */   
 void
 show_status_bar ()
 {
-    
+    int i;		  /* loop index over video planes        */
+
+    unsigned char buf[SCROLL_X_DIM * 18];  // 18 is for the height of the status bar
+    for (i = 0; i < SCROLL_X_DIM * 18; i++) {   // 18 is for the height of the status bar
+        buf[i] = 0x000C;
+    }
+
+    /* Draw to each plane in the video memory. */
+    for (i = 0; i < 4; i++) {
+	SET_WRITE_MASK (1 << (i + 8));
+    copy_status_bar (buf + i * (SCROLL_X_WIDTH * 18), 0x0000);
+    }
 }
 
 /*
@@ -1056,7 +1066,7 @@ copy_status_bar (unsigned char* img, unsigned short scr_addr)
      * but the code here provides an example of x86 string moves
      */
     asm volatile (
-        "cld                                                 ;"
+        "cld                                                 ;" // 1140 was calculated from 18 * 320 / 4, where 18 is the height of the status bar, 320 is length of x dimension, and we divide by 4 because there's 4 pixels per address
        	"movl $1440,%%ecx                                   ;"
        	"rep movsb    # copy ECX bytes from M[ESI] to M[EDI]  "
       : /* no outputs */
@@ -1064,7 +1074,6 @@ copy_status_bar (unsigned char* img, unsigned short scr_addr)
       : "eax", "ecx", "memory"
     );
 }
-// 1140 was calculated from 18 * 320 / 4, where 18 is the height of the status bar, 320 is length of x dimension, and we divide by 4 because there's 4 pixels per address
 
 #if defined(TEXT_RESTORE_PROGRAM)
 
