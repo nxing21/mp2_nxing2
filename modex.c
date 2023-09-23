@@ -553,8 +553,8 @@ show_status_bar ()
     /* Draw to each plane in the video memory. */
     for (i = 0; i < 4; i++) {
 	SET_WRITE_MASK (1 << (i + 8));
-    copy_status_bar (buf + i * (SCROLL_X_WIDTH * 18), 0x0000);
-    }
+    copy_status_bar (buf + i * (SCROLL_X_WIDTH * 18), 0x0000); // starting address of status bar (bottom of split screen) is 0
+    } // in this case, it doesn't matter what plane we draw since they are all the same color
 }
 
 /*
