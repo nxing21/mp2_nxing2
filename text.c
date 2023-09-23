@@ -562,3 +562,16 @@ unsigned char font_data[256][16] = {
      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
 };
 
+/* Write a text to graphics image generation routine. */
+int text_to_graphics(const char* s) {
+    unsigned char* buf;
+    int index = 0;
+    while (s[index] != '\0') {
+        int ascii_value = s[index];
+        unsigned char font = font_data[index];
+        
+
+        index++;
+    }
+}
+

@@ -306,7 +306,7 @@ set_mode_X (void (*horiz_fill_fn) (int, int, unsigned char[SCROLL_X_DIM]),
     }
 
     /* One display page goes at the start of video memory. */
-    target_img = 0x0000; 
+    target_img = 0x05A0; 
 
     /* Map video memory and obtain permission for VGA port access. */
     if (open_memory_and_ports () == -1)
@@ -545,12 +545,9 @@ show_status_bar ()
 {
     int i;		  /* loop index over video planes        */
 
-    /* Switch to the other target screen in video memory. */
-    target_img ^= 0x4000;
-
     unsigned char buf[SCROLL_X_DIM * 18];  // 18 is for the height of the status bar
     for (i = 0; i < SCROLL_X_DIM * 18; i++) {   // 18 is for the height of the status bar
-        buf[i] = 0x0008;
+        buf[i] = 0x8;
     }
 
     /* Draw to each plane in the video memory. */
@@ -1042,7 +1039,7 @@ copy_image (unsigned char* img, unsigned short scr_addr)
      */
     asm volatile (
         "cld                                                 ;"
-       	"movl $16000,%%ecx                                   ;"
+       	"movl $14560,%%ecx                                   ;"
        	"rep movsb    # copy ECX bytes from M[ESI] to M[EDI]  "
       : /* no outputs */
       : "S" (img), "D" (mem_image + scr_addr) 
