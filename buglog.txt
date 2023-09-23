@@ -1,0 +1,11 @@
+I had a visual problem where the screen looked wrong when moving left and right. 
+The bug was not difficult to fix, it took me about 20 min to figure it out, and
+I had to change about 5 lines of code in draw_vert_line.
+
+I had a visual problem with status bar, the bar was flashing at the top. The bug
+was somewhat difficult to fix, took me about 2-3 hours, and I had to fix the 
+starting address of the logical window.
+
+I had a problem where when scrolling down, I was not able to scroll down all the
+way. This fix took me about 30 minutes to fix with the help of a few friends and
+TA/CAs. The fix was one line, changing IMAGE_Y_DIM to 182.
