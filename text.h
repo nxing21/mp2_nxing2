@@ -43,4 +43,7 @@
 /* Standard VGA text font. */
 extern unsigned char font_data[256][16];
 
+/* Show text    */
+void text_to_graphics(unsigned char* buf, const char* s);
+
 #endif /* TEXT_H */

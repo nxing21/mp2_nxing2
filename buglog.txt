@@ -7,5 +7,5 @@ was somewhat difficult to fix, took me about 2-3 hours, and I had to fix the
 starting address of the logical window.
 
 I had a problem where when scrolling down, I was not able to scroll down all the
-way. This fix took me about 30 minutes to fix with the help of a few friends and
-TA/CAs. The fix was one line, changing IMAGE_Y_DIM to 182.
+way. This fix took me about 30 minutes to fix. The fix was one line, changing
+IMAGE_Y_DIM to 182.

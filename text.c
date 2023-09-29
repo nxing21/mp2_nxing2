@@ -36,6 +36,7 @@
 #include <string.h>
 
 #include "text.h"
+#include "modex.h"
 
 
 /* 
@@ -563,15 +564,30 @@ unsigned char font_data[256][16] = {
 };
 
 /* Write a text to graphics image generation routine. */
-int text_to_graphics(const char* s) {
-    unsigned char* buf;
-    int index = 0;
-    while (s[index] != '\0') {
-        int ascii_value = s[index];
-        unsigned char font = font_data[index];
-        
-
-        index++;
+void text_to_graphics(unsigned char* buf, const char* s) {
+    unsigned char get_msb = 0x80;   // bitwise & to get most significant bit
+    int i,j,k;
+    for (i = 0; i < strlen(s); i++) {
+        int ascii_value = (int) s[i];
+        unsigned char* font = font_data[ascii_value];
+        for (j = 0; j < FONT_HEIGHT; j++) {
+            unsigned char value = font[j];
+            int plane = 0;
+            for (k = 0; k < FONT_WIDTH; k++) {
+                int p_off = 3 - plane;
+                int msb = value & get_msb;
+                if (msb == 0x80) {  // draw new color
+                    buf[p_off * SCROLL_X_WIDTH * FONT_HEIGHT + j * SCROLL_X_WIDTH + i * FONT_WIDTH / 4 + k / 4] = 0x2;
+                }
+                else {  // same as background color
+                    buf[p_off * SCROLL_X_WIDTH * FONT_HEIGHT + j * SCROLL_X_WIDTH + i * FONT_WIDTH / 4 + k / 4] = 0x8;
+                }
+                value = value << 1;
+                if (++plane > 3) {
+                    plane = 0;
+                }
+            }
+        }
     }
 }
 
