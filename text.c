@@ -565,16 +565,17 @@ unsigned char font_data[256][16] = {
 
 /* Write a text to graphics image generation routine. */
 void text_to_graphics(unsigned char* buf, const char* s) {
-    int i,j,k;
+    int i,j,k;  /*  loop counters   */
 
+    /*  Draw background of status bar to a solid color. */
     for (i = 0; i < SCROLL_X_DIM * STATUS_BAR_HEIGHT; i++) {
         buf[i] = 0x8;
     }
 
     unsigned char get_msb = 0x80;   // bitwise & to get most significant bit
 
-    int address_offset;
-    address_offset = ((SCROLL_X_DIM / 2) - (strlen(s) * FONT_WIDTH / 2)) / 4;
+    /*  Calculate the x address of where the text should start so that it's centered.   */
+    int address_offset = ((SCROLL_X_DIM / 2) - (strlen(s) * FONT_WIDTH / 2)) / 4;
     
     for (i = 0; i < strlen(s); i++) {
         int ascii_value = (int) s[i];

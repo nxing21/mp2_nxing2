@@ -49,6 +49,7 @@
 
 #include "modex.h"
 #include "text.h"
+#include "input.h"
 
 
 /* 
@@ -81,6 +82,9 @@
 #define NUM_CRTC_REGS          25
 #define NUM_GRAPHICS_REGS       9
 #define NUM_ATTR_REGS          22
+
+/*  Status bar parameters   */
+#define MAX_TEXT_LENGTH     40
 
 /* VGA register settings for mode X */
 static unsigned short mode_X_seq[NUM_SEQUENCER_REGS] = {
@@ -534,34 +538,47 @@ show_screen ()
 /*
  * show_status_bar
  *   DESCRIPTION: Show the status bar
- *   INPUTS: none
+ *   INPUTS: (msg, typed, where) -- status message, typed message by user, location
  *   OUTPUTS: none
  *   RETURN VALUE: none
  *   SIDE EFFECTS: copies from the build buffer to video memory;
  *                 shifts the VGA display source to point to the new image
  */   
 void
-show_status_bar ()
+show_status_bar (const char* msg, const char* typed, const char* where)
 {
     int p_off;            /* plane offset of first display plane */
-    int i;		  /* loop index over video planes        */
+    int i;		  /* loop index over video planes and text messages */
 
-    /* 
-     * Calculate offset of build buffer plane to be mapped into plane 0 
-     * of display.
-     */
-    p_off = 3;
-
+    p_off = 3;  // we start with plane 0
     unsigned char buf[STATUS_BAR_HEIGHT * SCROLL_X_DIM];
 
-    // /* Draw to each plane in the video memory. */
-    // for (i = 0; i < 4; i++) {
-	// SET_WRITE_MASK (1 << (i + 8));
-    // copy_status_bar (buf + i * (SCROLL_X_WIDTH * 18), 0x0000); // starting address of status bar (bottom of split screen) is 0
-    // } // in this case, it doesn't matter what plane we draw since they are all the same color
-
-    const char* s = "Lebron James is washed and fraudulent!!";
-    text_to_graphics(buf, s);
+    if (msg[0] == '\0') {   /*  There is currently no status message to be printed, print the location and typed message.   */
+        char text[MAX_TEXT_LENGTH + 1]; // plus one to account for null termination
+        /*  Initialize as empty */
+        for (i = 0; i < MAX_TEXT_LENGTH; i++) {
+            text[i] = ' ';
+        }
+        text[MAX_TEXT_LENGTH - 1] = '_';
+        /*  Add the location to the left    */
+        for (i = 0; i < strlen(where); i++) {
+            text[i] = where[i];
+        }
+        if (strlen(typed) >= MAX_TYPED_LEN) {
+            for (i = 0; i < strlen(typed); i++) {
+                text[i + MAX_TEXT_LENGTH - strlen(typed)] = typed[i];
+            }
+        }
+        else {
+            for (i = 0; i < strlen(typed); i++) {
+                text[i + MAX_TEXT_LENGTH - strlen(typed) - 1] = typed[i];
+            }
+        }
+        text_to_graphics(buf, text);
+    }
+    else {  /*  There is a status message to be printed.    */
+        text_to_graphics(buf, msg);
+    }
     for (i = 0; i < 4; i++) {
 	SET_WRITE_MASK (1 << (i + 8));
     copy_status_bar (buf + ((p_off - i + 4) & 3) * (SCROLL_X_WIDTH * STATUS_BAR_HEIGHT) + (p_off < i), 0x0000);

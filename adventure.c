@@ -248,7 +248,7 @@ game_loop ()
 	}
 
 	show_screen ();
-	show_status_bar ();
+	show_status_bar (status_msg, get_typed_command(), room_name(game_info.where));
 
 	/*
 	 * Wait for tick.  The tick defines the basic timing of our
@@ -717,9 +717,6 @@ show_status (const char* s)
 {
     /* msg_lock critical section starts here. */
     (void)pthread_mutex_lock (&msg_lock);
-
-	/* Draw the status bar. */
-	// show_status_bar ();
 
     /* Copy the new message under the protection of msg_lock. */
     strncpy (status_msg, s, STATUS_MSG_LEN);
