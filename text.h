@@ -43,7 +43,7 @@
 /* Standard VGA text font. */
 extern unsigned char font_data[256][16];
 
-/* Show text    */
-void text_to_graphics(unsigned char* buf, const char* s);
+/* Build a buffer given a message to put on status bar  */
+void text_to_graphics(unsigned char* buf, const char* message);
 
 #endif /* TEXT_H */

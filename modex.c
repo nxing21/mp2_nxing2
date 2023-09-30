@@ -541,8 +541,8 @@ show_screen ()
  *   INPUTS: (msg, typed, where) -- status message, typed message by user, location
  *   OUTPUTS: none
  *   RETURN VALUE: none
- *   SIDE EFFECTS: copies from the build buffer to video memory;
- *                 shifts the VGA display source to point to the new image
+ *   SIDE EFFECTS: Gets buffer from text_to_graphics function.
+ *                 Then prints status bar to video memory
  */   
 void
 show_status_bar (const char* msg, const char* typed, const char* where)
@@ -551,7 +551,7 @@ show_status_bar (const char* msg, const char* typed, const char* where)
     int i;		  /* loop index over video planes and text messages */
 
     p_off = 3;  // we start with plane 0
-    unsigned char buf[STATUS_BAR_HEIGHT * SCROLL_X_DIM];
+    unsigned char buf[STATUS_BAR_HEIGHT * SCROLL_X_DIM];    /*  Declare a buffer, where the length is the number of pixels in the status bar    */
 
     if (msg[0] == '\0') {   /*  There is currently no status message to be printed, print the location and typed message.   */
         char text[MAX_TEXT_LENGTH + 1]; // plus one to account for null termination
@@ -559,37 +559,34 @@ show_status_bar (const char* msg, const char* typed, const char* where)
         for (i = 0; i < MAX_TEXT_LENGTH; i++) {
             text[i] = ' ';
         }
-        text[MAX_TEXT_LENGTH - 1] = '_';
-        /*  Add the location to the left    */
+        text[MAX_TEXT_LENGTH - 1] = '_';    // write underscore at the end, place for next character to be typed
+        /*  Add the location string on the left of the message    */
         for (i = 0; i < strlen(where); i++) {
             text[i] = where[i];
         }
+        /*  Add the typed message on the right of the message   */
+        /*  If the message is 20 chars long, then overwrite the underscore  */
         if (strlen(typed) >= MAX_TYPED_LEN) {
             for (i = 0; i < strlen(typed); i++) {
                 text[i + MAX_TEXT_LENGTH - strlen(typed)] = typed[i];
             }
         }
+        /*  If the message is less than 20 chars long, we need to leave the underscore where it is  */
         else {
             for (i = 0; i < strlen(typed); i++) {
                 text[i + MAX_TEXT_LENGTH - strlen(typed) - 1] = typed[i];
             }
         }
-        text_to_graphics(buf, text);
+        text_to_graphics(buf, text);    // build the buffer with the text message we just created
     }
     else {  /*  There is a status message to be printed.    */
-        text_to_graphics(buf, msg);
+        text_to_graphics(buf, msg); // build the buffer with the status message
     }
+    /*  Draw from the buffer to video memory.   */
     for (i = 0; i < 4; i++) {
 	SET_WRITE_MASK (1 << (i + 8));
     copy_status_bar (buf + ((p_off - i + 4) & 3) * (SCROLL_X_WIDTH * STATUS_BAR_HEIGHT) + (p_off < i), 0x0000);
     }
-
-    /* 
-     * Change the VGA registers to point the top left of the screen
-     * to the video memory that we just filled.
-     */
-    OUTW (0x03D4, (target_img & 0xFF00) | 0x0C);
-    OUTW (0x03D4, ((target_img & 0x00FF) << 8) | 0x0D);
 }
 
 /*
@@ -1073,7 +1070,7 @@ copy_image (unsigned char* img, unsigned short scr_addr)
      * but the code here provides an example of x86 string moves
      */
     asm volatile (
-        "cld                                                 ;"
+        "cld                                                 ;" // this is calculated 182 * 80, where 182 is the height of the image, 80 is the number of addresses in the x-dimension
        	"movl $14560,%%ecx                                   ;"
        	"rep movsb    # copy ECX bytes from M[ESI] to M[EDI]  "
       : /* no outputs */
@@ -1101,7 +1098,7 @@ copy_status_bar (unsigned char* img, unsigned short scr_addr)
      * but the code here provides an example of x86 string moves
      */
     asm volatile (
-        "cld                                                 ;" // 1140 was calculated from 18 * 320 / 4, where 18 is the height of the status bar, 320 is length of x dimension, and we divide by 4 because there's 4 pixels per address
+        "cld                                                 ;" // 1440 was calculated from 18 * 320 / 4, where 18 is the height of the status bar, 320 is length of x-dimension, and we divide by 4 because there's 4 pixels per address
        	"movl $1440,%%ecx                                   ;"
        	"rep movsb    # copy ECX bytes from M[ESI] to M[EDI]  "
       : /* no outputs */

@@ -563,33 +563,43 @@ unsigned char font_data[256][16] = {
      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
 };
 
-/* Write a text to graphics image generation routine. */
-void text_to_graphics(unsigned char* buf, const char* s) {
+/*
+ * text_to_graphics
+ *   DESCRIPTION: Given a message as an input, create a buffer for the status bar with the message printed
+ *   INPUTS: (buf, message) -- buffer to be created, message to be printed
+ *   OUTPUTS: none
+ *   RETURN VALUE: none
+ *   SIDE EFFECTS: Edits the buffer to include the status bar and message printed
+ */   
+void text_to_graphics(unsigned char* buf, const char* message) {
     int i,j,k;  /*  loop counters   */
 
     /*  Draw background of status bar to a solid color. */
     for (i = 0; i < SCROLL_X_DIM * STATUS_BAR_HEIGHT; i++) {
-        buf[i] = 0x8;
+        buf[i] = 0x1;
     }
 
     unsigned char get_msb = 0x80;   // bitwise & to get most significant bit
 
     /*  Calculate the x address of where the text should start so that it's centered.   */
-    int address_offset = ((SCROLL_X_DIM / 2) - (strlen(s) * FONT_WIDTH / 2)) / 4;
+    int address_offset = ((SCROLL_X_DIM / 2) - (strlen(message) * FONT_WIDTH / 2)) / 4;
     
-    for (i = 0; i < strlen(s); i++) {
-        int ascii_value = (int) s[i];
+    for (i = 0; i < strlen(message); i++) {   /*  Iteration through the entire string to be written */
+        /*  Get ASCII value of current character, and then get font data.   */
+        int ascii_value = (int) message[i]; 
         unsigned char* font = font_data[ascii_value];
-        for (j = 0; j < FONT_HEIGHT; j++) {
-            unsigned char value = font[j];
-            int plane = 0;
-            for (k = 0; k < FONT_WIDTH; k++) {
-                int p_off = 3 - plane;
-                int msb = value & get_msb;
-                if (msb == 0x80) {  // draw new color
-                    buf[SCROLL_X_WIDTH + p_off * SCROLL_X_WIDTH * STATUS_BAR_HEIGHT + j * SCROLL_X_WIDTH + i * FONT_WIDTH / 4 + k / 4 + address_offset] = 0x3;
+        for (j = 0; j < FONT_HEIGHT; j++) { /*  Iteration through each element of the array for the current char to be printed  */
+            unsigned char value = font[j];  // hex data of current element
+            int plane = 0;  // starts at plane 0
+            for (k = 0; k < FONT_WIDTH; k++) {  /*  Iteration through each bit in the hex value of current element  */
+                int p_off = 3 - plane;  //  calculate plane offset
+                int msb = value & get_msb;  /*  Get the MSB (leftmost bit) of value */
+                if (msb == 0x80) {  // draw new color if the bit is 1, otherwise do nothing (leave it as background color)
+                    /*  Draw to the appropriate location in the status bar buffer   */
+                    buf[SCROLL_X_WIDTH + p_off * SCROLL_X_WIDTH * STATUS_BAR_HEIGHT + j * SCROLL_X_WIDTH + i * FONT_WIDTH / 4 + k / 4 + address_offset] = 0x30;
                 }
-                value = value << 1;
+                value = value << 1; // left shift the value to get the next bit on the next iteration
+                /*  Increment plane (or reset to 0) */
                 if (++plane > 3) {
                     plane = 0;
                 }
