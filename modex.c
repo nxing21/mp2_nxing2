@@ -310,7 +310,7 @@ set_mode_X (void (*horiz_fill_fn) (int, int, unsigned char[SCROLL_X_DIM]),
     }
 
     /* One display page goes at the start of video memory. */
-    target_img = 0x05A0; 
+    target_img = 0x05A0; // this is 1440, which is starting address of the image
 
     /* Map video memory and obtain permission for VGA port access. */
     if (open_memory_and_ports () == -1)
