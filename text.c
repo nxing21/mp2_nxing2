@@ -565,8 +565,17 @@ unsigned char font_data[256][16] = {
 
 /* Write a text to graphics image generation routine. */
 void text_to_graphics(unsigned char* buf, const char* s) {
-    unsigned char get_msb = 0x80;   // bitwise & to get most significant bit
     int i,j,k;
+
+    for (i = 0; i < SCROLL_X_DIM * STATUS_BAR_HEIGHT; i++) {
+        buf[i] = 0x8;
+    }
+
+    unsigned char get_msb = 0x80;   // bitwise & to get most significant bit
+
+    int address_offset;
+    address_offset = ((SCROLL_X_DIM / 2) - (strlen(s) * FONT_WIDTH / 2)) / 4;
+    
     for (i = 0; i < strlen(s); i++) {
         int ascii_value = (int) s[i];
         unsigned char* font = font_data[ascii_value];
@@ -577,10 +586,7 @@ void text_to_graphics(unsigned char* buf, const char* s) {
                 int p_off = 3 - plane;
                 int msb = value & get_msb;
                 if (msb == 0x80) {  // draw new color
-                    buf[p_off * SCROLL_X_WIDTH * FONT_HEIGHT + j * SCROLL_X_WIDTH + i * FONT_WIDTH / 4 + k / 4] = 0x2;
-                }
-                else {  // same as background color
-                    buf[p_off * SCROLL_X_WIDTH * FONT_HEIGHT + j * SCROLL_X_WIDTH + i * FONT_WIDTH / 4 + k / 4] = 0x8;
+                    buf[SCROLL_X_WIDTH + p_off * SCROLL_X_WIDTH * STATUS_BAR_HEIGHT + j * SCROLL_X_WIDTH + i * FONT_WIDTH / 4 + k / 4 + address_offset] = 0x3;
                 }
                 value = value << 1;
                 if (++plane > 3) {

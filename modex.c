@@ -143,7 +143,6 @@ static void write_font_data ();
 static void set_text_mode_3 (int clear_scr);
 static void copy_image (unsigned char* img, unsigned short scr_addr);
 static void copy_status_bar (unsigned char* img, unsigned short scr_addr);
-static void copy_text (unsigned char* img, unsigned short scr_addr);
 
 
 /* 
@@ -551,26 +550,29 @@ show_status_bar ()
      * Calculate offset of build buffer plane to be mapped into plane 0 
      * of display.
      */
-    p_off = (3 - (show_x & 3));
+    p_off = 3;
 
-    unsigned char buf[SCROLL_X_DIM * 18];  // 18 is for the height of the status bar
-    for (i = 0; i < SCROLL_X_DIM * 18; i++) {   // 18 is for the height of the status bar
-        buf[i] = 0x8;
-    }
+    unsigned char buf[STATUS_BAR_HEIGHT * SCROLL_X_DIM];
 
-    /* Draw to each plane in the video memory. */
+    // /* Draw to each plane in the video memory. */
+    // for (i = 0; i < 4; i++) {
+	// SET_WRITE_MASK (1 << (i + 8));
+    // copy_status_bar (buf + i * (SCROLL_X_WIDTH * 18), 0x0000); // starting address of status bar (bottom of split screen) is 0
+    // } // in this case, it doesn't matter what plane we draw since they are all the same color
+
+    const char* s = "Lebron James is washed and fraudulent!!";
+    text_to_graphics(buf, s);
     for (i = 0; i < 4; i++) {
 	SET_WRITE_MASK (1 << (i + 8));
-    copy_status_bar (buf + i * (SCROLL_X_WIDTH * 18), 0x0000); // starting address of status bar (bottom of split screen) is 0
-    } // in this case, it doesn't matter what plane we draw since they are all the same color
-
-    const char* s = "Lebron mes is washed and fraudulent XD";
-    unsigned char text_buf[FONT_HEIGHT * SCROLL_X_DIM];
-    text_to_graphics(text_buf, s);
-    for (i = 0; i < 4; i++) {
-	SET_WRITE_MASK (1 << (i + 8));
-    copy_text (text_buf + (((p_off - i + 4) & 3)) * (SCROLL_X_WIDTH * 16) + (p_off < i), SCROLL_X_WIDTH);
+    copy_status_bar (buf + ((p_off - i + 4) & 3) * (SCROLL_X_WIDTH * STATUS_BAR_HEIGHT) + (p_off < i), 0x0000);
     }
+
+    /* 
+     * Change the VGA registers to point the top left of the screen
+     * to the video memory that we just filled.
+     */
+    OUTW (0x03D4, (target_img & 0xFF00) | 0x0C);
+    OUTW (0x03D4, ((target_img & 0x00FF) << 8) | 0x0D);
 }
 
 /*
@@ -1084,24 +1086,6 @@ copy_status_bar (unsigned char* img, unsigned short scr_addr)
     asm volatile (
         "cld                                                 ;" // 1140 was calculated from 18 * 320 / 4, where 18 is the height of the status bar, 320 is length of x dimension, and we divide by 4 because there's 4 pixels per address
        	"movl $1440,%%ecx                                   ;"
-       	"rep movsb    # copy ECX bytes from M[ESI] to M[EDI]  "
-      : /* no outputs */
-      : "S" (img), "D" (mem_image + scr_addr) 
-      : "eax", "ecx", "memory"
-    );
-}
-
-static void
-copy_text (unsigned char* img, unsigned short scr_addr)
-{
-    /* 
-     * memcpy is actually probably good enough here, and is usually
-     * implemented using ISA-specific features like those below,
-     * but the code here provides an example of x86 string moves
-     */
-    asm volatile (
-        "cld                                                 ;" // 1140 was calculated from 18 * 320 / 4, where 18 is the height of the status bar, 320 is length of x dimension, and we divide by 4 because there's 4 pixels per address
-       	"movl $1280,%%ecx                                   ;"
        	"rep movsb    # copy ECX bytes from M[ESI] to M[EDI]  "
       : /* no outputs */
       : "S" (img), "D" (mem_image + scr_addr) 
