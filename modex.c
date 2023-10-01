@@ -550,7 +550,7 @@ show_status_bar (const char* msg, const char* typed, const char* where)
     int p_off;            /* plane offset of first display plane */
     int i;		  /* loop index over video planes and text messages */
 
-    p_off = 3;  // we start with plane 0
+    p_off = 3;  // we start with plane 0, which has plane offset of 3
     unsigned char buf[STATUS_BAR_HEIGHT * SCROLL_X_DIM];    /*  Declare a buffer, where the length is the number of pixels in the status bar    */
 
     if (msg[0] == '\0') {   /*  There is currently no status message to be printed, print the location and typed message.   */
@@ -625,7 +625,7 @@ clear_screens ()
  *   INPUTS: x -- the 0-based pixel column number of the line to be drawn
  *                within the logical view window (equivalent to the number
  *                of pixels from the leftmost pixel to the line to be
- *                drawn)
+ *                drawn)Set_mode_x
  *   OUTPUTS: none
  *   RETURN VALUE: Returns 0 on success.  If x is outside of the valid 
  *                 SCROLL range, the function returns -1.  

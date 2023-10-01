@@ -11,9 +11,10 @@ way. This issue took me about 30 minutes to fix. The fix was one line, changing
 IMAGE_Y_DIM to 182.
 
 I had a problem with the status bar, where instead of displaying the correct text,
-the screen showed lots of random drawings that clearly were incorrect. This bug
-was somewhat difficult to fix, as it took be about an hour. The bug was fixed by
-changing/editing around 20 lines in my text_to_graphics function.
+the screen showed lots of different colors in random places that clearly were
+incorrect. This bug was somewhat difficult to fix, as it took be about an hour.
+The bug was fixed by changing/editing around 20 lines in my text_to_graphics
+function.
 
 I had an issue where the text was not appearing centered like I wanted it to be.
 Instead, the text was towards the left of the screen, but not all the way at the
@@ -23,8 +24,8 @@ function, and some of my show_status_bar function (50 lines of code approximatel
 
 I had a problem when scrolling left and right, the status bar would shift weirdly,
 when it was supposed to stay steady. This fix was somewhat tricky, as it took me
-about an hour or two to find the bug, and the fix was rather simple, just
-adjusting some logic with what planes were being written (about 5 lines of code).
+about an hour or two to find the bug, and the fix was just adjusting some logic
+with what planes were being written (about 5 lines of code).
 
 I had a visual problem where the text was displaying at the wrong location in the
 status bar when I was printing the room and the typed message. This bug was pretty
