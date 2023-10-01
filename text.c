@@ -578,9 +578,7 @@ void text_to_graphics(unsigned char* buf, const char* message) {
     for (i = 0; i < SCROLL_X_DIM * STATUS_BAR_HEIGHT; i++) {
         buf[i] = 0x1;
     }
-
     unsigned char get_msb = 0x80;   // bitwise & to get most significant bit
-
     /*  Calculate the x address of where the text should start so that it's centered.   */
     int address_offset = ((SCROLL_X_DIM / CENTER) - (strlen(message) * FONT_WIDTH / CENTER)) / NUM_PLANES;
     
