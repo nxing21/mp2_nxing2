@@ -576,7 +576,7 @@ void text_to_graphics(unsigned char* buf, const char* message) {
 
     /*  Draw background of status bar to a solid color. */
     for (i = 0; i < SCROLL_X_DIM * STATUS_BAR_HEIGHT; i++) {
-        buf[i] = 0x1;
+        buf[i] = 0x1;   // color I chose is 0x1
     }
     unsigned char get_msb = 0x80;   // bitwise & to get most significant bit
     /*  Calculate the x address of where the text should start so that it's centered.   */
@@ -594,7 +594,7 @@ void text_to_graphics(unsigned char* buf, const char* message) {
                 int msb = value & get_msb;  /*  Get the MSB (leftmost bit) of value */
                 if (msb == 0x80) {  // draw new color if the bit is 1, otherwise do nothing (leave it as background color)
                     /*  Draw to the appropriate location in the status bar buffer   */
-                    buf[SCROLL_X_WIDTH + p_off * SCROLL_X_WIDTH * STATUS_BAR_HEIGHT + j * SCROLL_X_WIDTH + i * FONT_WIDTH / 4 + k / 4 + address_offset] = 0x30;
+                    buf[SCROLL_X_WIDTH + p_off * SCROLL_X_WIDTH * STATUS_BAR_HEIGHT + j * SCROLL_X_WIDTH + i * FONT_WIDTH / 4 + k / 4 + address_offset] = 0x30; // color I chose is 0x30
                 }
                 value = value << 1; // left shift the value to get the next bit on the next iteration
                 /*  Increment plane (or reset to 0) */
