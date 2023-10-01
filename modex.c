@@ -310,7 +310,7 @@ set_mode_X (void (*horiz_fill_fn) (int, int, unsigned char[SCROLL_X_DIM]),
     }
 
     /* One display page goes at the start of video memory. */
-    target_img = 0x05A0; // this is 1440, which is starting address of the image
+    target_img = 0x05A0; // this is 1440, which is starting address of the image, which was calculated by the number of addresses in the status bar
 
     /* Map video memory and obtain permission for VGA port access. */
     if (open_memory_and_ports () == -1)
@@ -585,7 +585,7 @@ show_status_bar (const char* msg, const char* typed, const char* where)
     /*  Draw from the buffer to video memory. Same calculations as show_screen  */
     for (i = 0; i < 4; i++) {
 	SET_WRITE_MASK (1 << (i + 8));
-    copy_status_bar (buf + ((p_off - i + 4) & 3) * (SCROLL_X_WIDTH * STATUS_BAR_HEIGHT) + (p_off < i), 0x0000);
+    copy_status_bar (buf + ((p_off - i + 4) & 3) * (SCROLL_X_WIDTH * STATUS_BAR_HEIGHT) + (p_off < i), 0x0000); // status bar starts at address 0x0000
     }
 }
 
