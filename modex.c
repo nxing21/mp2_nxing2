@@ -582,7 +582,7 @@ show_status_bar (const char* msg, const char* typed, const char* where)
     else {  /*  There is a status message to be printed.    */
         text_to_graphics(buf, msg); // build the buffer with the status message
     }
-    /*  Draw from the buffer to video memory.   */
+    /*  Draw from the buffer to video memory. Same calculations as show_screen  */
     for (i = 0; i < 4; i++) {
 	SET_WRITE_MASK (1 << (i + 8));
     copy_status_bar (buf + ((p_off - i + 4) & 3) * (SCROLL_X_WIDTH * STATUS_BAR_HEIGHT) + (p_off < i), 0x0000);
