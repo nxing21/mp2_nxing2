@@ -582,7 +582,7 @@ void text_to_graphics(unsigned char* buf, const char* message) {
     unsigned char get_msb = 0x80;   // bitwise & to get most significant bit
 
     /*  Calculate the x address of where the text should start so that it's centered.   */
-    int address_offset = ((SCROLL_X_DIM / 2) - (strlen(message) * FONT_WIDTH / 2)) / 4;
+    int address_offset = ((SCROLL_X_DIM / CENTER) - (strlen(message) * FONT_WIDTH / CENTER)) / NUM_PLANES;
     
     for (i = 0; i < strlen(message); i++) {   /*  Iteration through the entire string to be written */
         /*  Get ASCII value of current character, and then get font data.   */

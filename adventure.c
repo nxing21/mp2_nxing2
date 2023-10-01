@@ -249,7 +249,7 @@ game_loop ()
 
 	/*	Show the screen	*/
 	show_screen ();
-	/*	Show the status bar, along with the message	*/
+	/*	Show the status bar, along with the message, using a lock	*/
 	(void)pthread_mutex_lock (&msg_lock);
 	show_status_bar (status_msg, get_typed_command(), room_name(game_info.where));
 	(void)pthread_mutex_unlock (&msg_lock);

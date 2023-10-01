@@ -40,6 +40,10 @@
 #define FONT_WIDTH   8
 #define FONT_HEIGHT 16
 
+/* Some variables to help with calculations.    */
+#define CENTER  2       // divide by 2 to get the centerpoint
+#define NUM_PLANES  4   // number of planes -- 0, 1, 2, and 3
+
 /* Standard VGA text font. */
 extern unsigned char font_data[256][16];
 

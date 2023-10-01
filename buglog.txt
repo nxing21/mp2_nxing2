@@ -3,9 +3,31 @@ The bug was not difficult to fix, it took me about 20 min to figure it out, and
 I had to change about 5 lines of code in draw_vert_line.
 
 I had a visual problem with status bar, the bar was flashing at the top. The bug
-was somewhat difficult to fix, took me about 2-3 hours, and I had to fix the 
-starting address of the logical window.
+was somewhat difficult to fix, took me about 1-2 hours, and I had to fix the 
+starting address of the logical window (1 line of code).
 
 I had a problem where when scrolling down, I was not able to scroll down all the
-way. This fix took me about 30 minutes to fix. The fix was one line, changing
+way. This issue took me about 30 minutes to fix. The fix was one line, changing
 IMAGE_Y_DIM to 182.
+
+I had a problem with the status bar, where instead of displaying the correct text,
+the screen showed lots of random drawings that clearly were incorrect. This bug
+was somewhat difficult to fix, as it took be about an hour. The bug was fixed by
+changing/editing around 20 lines in my text_to_graphics function.
+
+I had an issue where the text was not appearing centered like I wanted it to be.
+Instead, the text was towards the left of the screen, but not all the way at the
+left, which is not what I wanted. This bug was probably the most difficult for me
+to fix. It took me about 3-4 hours and I had to rewrite most of my text_to_graphics
+function, and some of my show_status_bar function (50 lines of code approximately).
+
+I had a problem when scrolling left and right, the status bar would shift weirdly,
+when it was supposed to stay steady. This fix was somewhat tricky, as it took me
+about an hour or two to find the bug, and the fix was rather simple, just
+adjusting some logic with what planes were being written (about 5 lines of code).
+
+I had a visual problem where the text was displaying at the wrong location in the
+status bar when I was printing the room and the typed message. This bug was pretty
+easy to fix, since I just had to adjust some logic in the string I was sending
+into the text_to_graphics function. It took about 30 minutes, and the fix was
+about 10 lines of code.
