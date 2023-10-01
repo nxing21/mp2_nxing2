@@ -1070,7 +1070,7 @@ copy_image (unsigned char* img, unsigned short scr_addr)
      * but the code here provides an example of x86 string moves
      */
     asm volatile (
-        "cld                                                 ;" // this is calculated 182 * 80, where 182 is the height of the image, 80 is the number of addresses in the x-dimension
+        "cld                                                 ;" // this is calculated 182 * 320 / 4, where 182 is the height of the image, 320 is length of x-dimension, and we divide by 4 because there's 4 pixels per address
        	"movl $14560,%%ecx                                   ;"
        	"rep movsb    # copy ECX bytes from M[ESI] to M[EDI]  "
       : /* no outputs */
