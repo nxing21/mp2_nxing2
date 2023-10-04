@@ -91,18 +91,26 @@ int tux_init_ioctl(struct tty_struct* tty) {
 }
 
 int set_led_ioctl(struct tty_struct* tty, unsigned long arg) {
-	unsigned int num_bytes, led_on, get_cur_led, decimal_points, cur_led, cur_segment;
+	unsigned int num_bytes, led_on, get_cur_led, decimal_points, cur_led, cur_segment, num_off;
 
 	num_bytes = 2;	// start with 2 bytes guaranteed, will be incremented based on number of LEDs that are on
-	unsigned char buf[NUM_LEDS + num_bytes];
+	int i;	// loop counter
 	led_on = (arg >> 16) & 0x0F;
+
+	num_off = 0;
+	for (i = 0; i < NUM_LEDS; i++) {
+		if (!(led_on >> i) & 0x01) {
+			num_off++;
+		}
+	}
+	unsigned char buf[NUM_LEDS + num_bytes - num_off];
+
 	buf[0] = MTCP_LED_SET;	// opcode
 	buf[1] = led_on;	//	first byte is LEDs to be set
 
 	get_cur_led = 0x0F;	// bitwise & with this to get cur_led
 	decimal_points = arg >> 24;
 
-	int i;	// loop counter
 	for (i = 0; i < NUM_LEDS; i++) {
 		if (led_on & 0x01) {	// this means the LED is on
 			cur_led = get_cur_led & arg;
