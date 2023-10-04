@@ -68,29 +68,36 @@ tuxctl_ioctl (struct tty_struct* tty, struct file* file,
 {
     switch (cmd) {
 	case TUX_INIT:
-		return tux_init();
+		return tux_init_ioctl(tty);
 	case TUX_BUTTONS:
-		return tux_buttons(arg);
+		return tux_buttons_ioctl(tty, arg);
 	case TUX_SET_LED:
-		return set_led(arg);
+		return set_led_ioctl(tty, arg);
 	case TUX_LED_ACK:
+		return 0;
 	case TUX_LED_REQUEST:
+		return 0;
 	case TUX_READ_LED:
+		return 0;
 	default:
 	    return -EINVAL;
     }
 }
 
 /* Initializes any variables associated with the driver and returns 0. */
-int tux_init() {
+int tux_init_ioctl(struct tty_struct* tty) {
 	return 0;
 }
 
-int set_led(unsigned long arg) {
+int set_led_ioctl(struct tty_struct* tty, unsigned long arg) {
+	int num_bytes = 6;	// there are 6 bytes we need to set in the buffer
+	unsigned char buf[num_bytes];
+	buf[0] = MTCP_LED_SET;
+
 	return 0;
 }
 
-int tux_buttons(unsigned long arg) {
+int tux_buttons_ioctl(struct tty_struct* tty, unsigned long arg) {
 	if (input == NULL) {
 		return -EINVAL;
 	}
