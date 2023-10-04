@@ -10,5 +10,7 @@
 #define TUX_LED_REQUEST _IO('E', 0x14)
 #define TUX_LED_ACK _IO('E', 0x15)
 
+#define NUM_LEDS    4
+
 #endif
 

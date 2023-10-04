@@ -29,7 +29,8 @@
 #define debug(str, ...) \
 	printk(KERN_DEBUG "%s: " str, __FUNCTION__, ## __VA_ARGS__)
 
-int tux_init();
+/*	The hex values corresponding to the 7 segment display of each hex value from 0 to F.	*/
+unsigned char led_segments = {0xE7, 0x06, 0xCB, 0x8F, 0x2E, 0xAD, 0xED, 0x86, 0xEF, 0xAF, 0xEE, 0x6D, 0xE1, 0x4F, 0xE9, 0xE8};
 
 /************************ Protocol Implementation *************************/
 
@@ -90,15 +91,34 @@ int tux_init_ioctl(struct tty_struct* tty) {
 }
 
 int set_led_ioctl(struct tty_struct* tty, unsigned long arg) {
-	int num_bytes = 6;	// there are 6 bytes we need to set in the buffer
-	unsigned char buf[num_bytes];
-	buf[0] = MTCP_LED_SET;
+	unsigned int num_bytes = 2;	// start with 2 bytes guaranteed, will be incremented based on number of LEDs that are on
+	unsigned char buf[NUM_LEDS + num_bytes];
+	unsigned int led_on = (arg >> 16) & 0x0F;
+	buf[0] = MTCP_LED_SET;	// opcode
+	buf[1] = led_on;	//	first byte is LEDs to be set
 
+	unsigned int get_cur_led = 0x0F;	// bitwise & with this to get cur_led
+	unsigned int decimal_points = arg >> 24;
+
+	int i;	// loop counter
+	for (i = 0; i < NUM_LEDS; i++) {
+		if (led_on & 0x01) {	// this means the LED is on
+			num_bytes++;
+			unsigned int cur_led = get_cur_led & arg;
+			unsigned int cur_segment = led_segments[cur_led];
+			cur_segment |= ((decimal_points & 0x01) << 4);
+			buf[i+2] = cur_segment;			
+		}
+		led_on >>= 1;
+		arg >>= 4;
+		decimal_points >>= 1;
+	}
+	tuxctl_ldisc_put(tty, buf, num_bytes);
 	return 0;
 }
 
 int tux_buttons_ioctl(struct tty_struct* tty, unsigned long arg) {
-	if (input == NULL) {
+	if (arg == NULL) {
 		return -EINVAL;
 	}
 
