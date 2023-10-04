@@ -103,11 +103,11 @@ int set_led_ioctl(struct tty_struct* tty, unsigned long arg) {
 	int i;	// loop counter
 	for (i = 0; i < NUM_LEDS; i++) {
 		if (led_on & 0x01) {	// this means the LED is on
-			num_bytes++;
 			unsigned int cur_led = get_cur_led & arg;
 			unsigned int cur_segment = led_segments[cur_led];
 			cur_segment |= ((decimal_points & 0x01) << 4);
-			buf[i+2] = cur_segment;			
+			buf[num_bytes] = cur_segment;
+			num_bytes++;
 		}
 		led_on >>= 1;
 		arg >>= 4;
