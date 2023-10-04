@@ -120,7 +120,7 @@ int set_led_ioctl(struct tty_struct* tty, unsigned long arg) {
 }
 
 int tux_buttons_ioctl(struct tty_struct* tty, unsigned long arg) {
-	if (arg == NULL) {
+	if (*arg == NULL) {
 		return -EINVAL;
 	}
 
