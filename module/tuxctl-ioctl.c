@@ -29,6 +29,8 @@
 #define debug(str, ...) \
 	printk(KERN_DEBUG "%s: " str, __FUNCTION__, ## __VA_ARGS__)
 
+int tux_init();
+
 /************************ Protocol Implementation *************************/
 
 /* tuxctl_handle_packet()
@@ -66,19 +68,32 @@ tuxctl_ioctl (struct tty_struct* tty, struct file* file,
 {
     switch (cmd) {
 	case TUX_INIT:
-		break;
+		return tux_init();
 	case TUX_BUTTONS:
-		break;
+		return tux_buttons(arg);
 	case TUX_SET_LED:
-		break;
+		return set_led(arg);
 	case TUX_LED_ACK:
-		break;
 	case TUX_LED_REQUEST:
-		break;
 	case TUX_READ_LED:
-		break;
 	default:
 	    return -EINVAL;
     }
 }
 
+/* Initializes any variables associated with the driver and returns 0. */
+int tux_init() {
+	return 0;
+}
+
+int set_led(unsigned long arg) {
+	return 0;
+}
+
+int tux_buttons(unsigned long arg) {
+	if (input == NULL) {
+		return -EINVAL;
+	}
+
+	return 0;
+}
