@@ -47,6 +47,11 @@ void tuxctl_handle_packet (struct tty_struct* tty, unsigned char* packet)
     b = packet[1]; /* values when printing them. */
     c = packet[2];
 
+	switch(a) {
+		case MTCP_BIOC_EVENT:
+		case MTCP_ACK:
+	}
+
     /*printk("packet : %x %x %x\n", a, b, c); */
 }
 
@@ -87,6 +92,10 @@ tuxctl_ioctl (struct tty_struct* tty, struct file* file,
 
 /* Initializes any variables associated with the driver and returns 0. */
 int tux_init_ioctl(struct tty_struct* tty) {
+	int num_bytes = 1;
+	unsigned char buf[num_bytes];
+	buf[0] = MTCP_BIOC_ON;
+	tuxctl_ldisc_put(tty, buf, num_bytes);
 	return 0;
 }
 
