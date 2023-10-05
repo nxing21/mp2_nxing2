@@ -31,6 +31,9 @@
 
 /*	The hex values corresponding to the 7 segment display of each hex value from 0 to F.	*/
 unsigned char led_segments = {0xE7, 0x06, 0xCB, 0x8F, 0x2E, 0xAD, 0xED, 0x86, 0xEF, 0xAF, 0xEE, 0x6D, 0xE1, 0x4F, 0xE9, 0xE8};
+unsigned int ack_flag;
+unsigned char leds;
+unsigned char buttons[2];
 
 /************************ Protocol Implementation *************************/
 
@@ -49,7 +52,14 @@ void tuxctl_handle_packet (struct tty_struct* tty, unsigned char* packet)
 
 	switch(a) {
 		case MTCP_BIOC_EVENT:
+			buttons[0] = b;
+			buttons[1] = c;
+			break;
 		case MTCP_ACK:
+			ack_flag = 1;
+			break;
+		default:
+			break;
 	}
 
     /*printk("packet : %x %x %x\n", a, b, c); */
@@ -114,7 +124,7 @@ int set_led_ioctl(struct tty_struct* tty, unsigned long arg) {
 	}
 	unsigned char buf[NUM_LEDS + num_bytes - num_off];
 
-	buf[0] = MTCP_LED_SET;	// opcode
+	buf[0] = MTCP_LED_SET;	//	opcode
 	buf[1] = led_on;	//	first byte is LEDs to be set
 
 	get_cur_led = 0x0F;	// bitwise & with this to get cur_led
