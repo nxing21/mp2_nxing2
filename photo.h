@@ -100,6 +100,7 @@ extern image_t* read_obj_image (const char* fname);
 /* Read room photo from a file into a dynamically allocated structure. */
 extern photo_t* read_photo (const char* fname);
 
+/* Comparator for the qsort. */
 int compare (const void *node1, const void *node2);
 
 /* 

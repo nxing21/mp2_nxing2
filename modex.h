@@ -140,6 +140,7 @@ extern int draw_horiz_line (int y);
 /* draw a vertical line at horizontal pixel x within the logical view window */
 extern int draw_vert_line (int x);
 
+/* set the palette for the current room */
 void set_palette_color (unsigned char* palette_RGB);
 
 #endif /* MODEX_H */

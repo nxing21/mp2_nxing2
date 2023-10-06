@@ -327,7 +327,7 @@ prep_room (const room_t* r)
     /* Record the current room. */
     cur_room = r;
 	/* Set palette for the room. */
-	set_palette_color((unsigned char*)room_photo(r)->palette);
+	set_palette_colors((unsigned char*)room_photo(r)->palette);
 }
 
 
