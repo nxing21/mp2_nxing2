@@ -937,7 +937,7 @@ fill_palette_mode_x ()
 }
 
 /*
- * set_palette_color
+ * set_palette_colors
  *  DESCRIPTION: Sets the palette for the current room.
  *  Writes 192 colors using octrees strategy.
  *  INPUTS: palette_RGB - the palette to be written
@@ -945,7 +945,7 @@ fill_palette_mode_x ()
  *  RETURN VALUE: none
  *  SIDE EFFECTS: adds colors to the palette
  */
-void set_palette_color (unsigned char* palette_RGB) {
+void set_palette_colors (unsigned char* palette_RGB) {
     OUTB (0x03C8, 0x40);
     REP_OUTSB (0x03C9, palette_RGB, PALETTE_SIZE * 3);
 }

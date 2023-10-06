@@ -141,6 +141,6 @@ extern int draw_horiz_line (int y);
 extern int draw_vert_line (int x);
 
 /* set the palette for the current room */
-void set_palette_color (unsigned char* palette_RGB);
+void set_palette_colors (unsigned char* palette_RGB);
 
 #endif /* MODEX_H */
