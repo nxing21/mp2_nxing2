@@ -29,11 +29,9 @@
 #define debug(str, ...) \
 	printk(KERN_DEBUG "%s: " str, __FUNCTION__, ## __VA_ARGS__)
 
-/*	The hex values corresponding to the 7 segment display of each hex value from 0 to F.	*/
-unsigned char led_segments = {0xE7, 0x06, 0xCB, 0x8F, 0x2E, 0xAD, 0xED, 0x86, 0xEF, 0xAF, 0xEE, 0x6D, 0xE1, 0x4F, 0xE9, 0xE8};
-unsigned int ack_flag;
 unsigned char leds;
 unsigned char buttons[2];
+static spinlock_t lock = SPIN_LOCK_UNLOCKED;
 
 /************************ Protocol Implementation *************************/
 
@@ -56,7 +54,8 @@ void tuxctl_handle_packet (struct tty_struct* tty, unsigned char* packet)
 			buttons[1] = c;
 			break;
 		case MTCP_ACK:
-			ack_flag = 1;
+			break;
+		case MTCP_CLK_RESET:
 			break;
 		default:
 			break;
@@ -116,19 +115,17 @@ int set_led_ioctl(struct tty_struct* tty, unsigned long arg) {
 	int i;	// loop counter
 	led_on = (arg >> 16) & 0x0F;
 
-	num_off = 0;
-	for (i = 0; i < NUM_LEDS; i++) {
-		if (!(led_on >> i) & 0x01) {
-			num_off++;
-		}
-	}
-	unsigned char buf[NUM_LEDS + num_bytes - num_off];
+	leds = arg;
+	unsigned char buf[NUM_LEDS + num_bytes];
 
 	buf[0] = MTCP_LED_SET;	//	opcode
-	buf[1] = led_on;	//	first byte is LEDs to be set
+	buf[1] = 0x0F;
 
 	get_cur_led = 0x0F;	// bitwise & with this to get cur_led
 	decimal_points = arg >> 24;
+
+	/*	The hex values corresponding to the 7 segment display of each hex value from 0 to F.	*/
+	unsigned char led_segments = {0xE7, 0x06, 0xCB, 0x8F, 0x2E, 0xAD, 0xED, 0x86, 0xEF, 0xAF, 0xEE, 0x6D, 0xE1, 0x4F, 0xE9, 0xE8};
 
 	for (i = 0; i < NUM_LEDS; i++) {
 		if (led_on & 0x01) {	// this means the LED is on
@@ -150,6 +147,9 @@ int tux_buttons_ioctl(struct tty_struct* tty, unsigned long arg) {
 	if (*arg == NULL) {
 		return -EINVAL;
 	}
+
+	copy_to_user(arg, &buttons, 1);
+
 
 	return 0;
 }

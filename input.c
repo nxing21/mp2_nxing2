@@ -67,6 +67,8 @@
 /* stores original terminal settings */
 static struct termios tio_orig;
 
+static int fd;
+
 
 /* 
  * init_input
@@ -83,6 +85,9 @@ static struct termios tio_orig;
 int
 init_input ()
 {
+	fd = open("/dev/ttyS0", O_RDWR | O_NOCTTY);
+	int ldisc_num = N_MOUSE;
+	ioctl(fd, TIOCSETD, &ldisc_num);
     struct termios tio_new;
 
     /*

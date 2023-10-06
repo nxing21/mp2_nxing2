@@ -76,12 +76,12 @@ struct image_t {
 };
 
 struct octree_node {
-	uint32_t red_sum;
-	uint32_t green_sum;
-	uint32_t blue_sum;
-	uint32_t count;
-	uint32_t index;
-	uint32_t rgb;
+	int red_sum;
+	int green_sum;
+	int blue_sum;
+	int count;
+	int index;
+	int rgb;
 };
 
 
@@ -497,17 +497,17 @@ read_photo (const char* fname)
 
 	    }
 
-		uint32_t red, green, blue;
+		int red, green, blue;
 		/* Extract the red (5 bits), green (6 bits), and blue (5 bits) of the current pixel. */
 		blue = pixel & 0x1F;
 		green = (pixel >> GREEN_OFFSET) & 0x3F;
 		red = (pixel >> RED_OFFSET) & 0x1F;
-		uint32_t red_4, green_4, blue_4;
+		int red_4, green_4, blue_4;
 		/* Extract the 4 MSBs of each color. */
 		blue_4 = (pixel >> BLUE_4_OFFSET) & 0x0F;
 		green_4 = (pixel >> GREEN_4_OFFSET) & 0x0F;
 		red_4 = (pixel >> RED_4_OFFSET) & 0x0F;
-		uint32_t lvl_4_index, lvl_2_index;
+		int lvl_4_index, lvl_2_index;
 		/* Get the level 4 index (4 MSBs of each color) and level 2 index (2 MSBs of each color). */
 		lvl_4_index = blue_4 | (green_4 << LVL_4_OFFSET) | (red_4 << (LVL_4_OFFSET * 2)); // green is 1 offset away, while red is 2
 		lvl_2_index = (blue_4 >> GET_LVL_2) | ((green_4 >> GET_LVL_2) << LVL_2_OFFSET) | ((red_4 >> GET_LVL_2) << (LVL_2_OFFSET * 2)); // green is 1 offset away, while red is 2
@@ -548,14 +548,23 @@ read_photo (const char* fname)
 	qsort(lvl_4, LENGTH_LVL_4, sizeof(struct octree_node), compare);
 	/* Write to the palette */
 	for (i = 0; i < PALETTE_LVL_4; i++) {
-		lvl_4[lvl_4[i].rgb].index = i; // save the palette index because we need it after sorting
+		int rgb_lvl_4;
+		rgb_lvl_4 = lvl_4[i].rgb;
+		lvl_4[rgb_lvl_4].index = i; // save the palette index because we need it after sorting
+		int rgb_lvl_2;
+		rgb_lvl_2 = ((rgb_lvl_4 >> GET_LVL_2) & 0x03) | (((rgb_lvl_4 >> (GET_LVL_2 + LVL_4_OFFSET)) & 0x03) << LVL_2_OFFSET) | (((rgb_lvl_4 >> (GET_LVL_2 + LVL_4_OFFSET * 2)) & 0x03) << (LVL_2_OFFSET * 2)); // green is 1 offset away, while red is 2
+		/* Need to remove the level 4 pixel's contribution to the level 2 of the octree. */
+		lvl_2[rgb_lvl_2].count -= lvl_4[i].count;
+		lvl_2[rgb_lvl_2].red_sum -= lvl_4[i].red_sum;
+		lvl_2[rgb_lvl_2].green_sum -= lvl_4[i].green_sum;
+		lvl_2[rgb_lvl_2].blue_sum -= lvl_4[i].blue_sum;
 		if (lvl_4[i].count == 0) {
 			continue; // avoid divide by 0 error
 		}
 		// 0 corresponds to red, 1 corresponds to green, 2 corresponds to blue
-		p->palette[i][0] = lvl_4[i].red_sum / lvl_4[i].count << 1; // get the average (5 bits) then shift left to add a 0 at the end for the palette
+		p->palette[i][0] = (lvl_4[i].red_sum / lvl_4[i].count) << 1; // get the average (5 bits) then shift left to add a 0 at the end for the palette
 		p->palette[i][1] = lvl_4[i].green_sum / lvl_4[i].count; // get the average (6 bits)
-		p->palette[i][2] = lvl_4[i].blue_sum / lvl_4[i].count << 1; // get the average (5 bits) then shift left to add a 0 at the end for the palette
+		p->palette[i][2] = (lvl_4[i].blue_sum / lvl_4[i].count) << 1; // get the average (5 bits) then shift left to add a 0 at the end for the palette
 	}
 
 	/* Continue writing to the palette */
@@ -564,9 +573,9 @@ read_photo (const char* fname)
 			continue; // avoid divide by 0 error
 		}
 		// 0 corresponds to red, 1 corresponds to green, 2 corresponds to blue
-		p->palette[i+PALETTE_LVL_4][0] = lvl_2[i].red_sum / lvl_2[i].count << 1; // get the average (5 bits) then shift left to add a 0 at the end for the palette
+		p->palette[i+PALETTE_LVL_4][0] = (lvl_2[i].red_sum / lvl_2[i].count) << 1; // get the average (5 bits) then shift left to add a 0 at the end for the palette
 		p->palette[i+PALETTE_LVL_4][1] = lvl_2[i].green_sum / lvl_2[i].count; // get the average (6 bits)
-		p->palette[i+PALETTE_LVL_4][2] = lvl_2[i].blue_sum / lvl_2[i].count << 1; // get the average (5 bits) then shift left to add a 0 at the end for the palette
+		p->palette[i+PALETTE_LVL_4][2] = (lvl_2[i].blue_sum / lvl_2[i].count) << 1; // get the average (5 bits) then shift left to add a 0 at the end for the palette
 	}
 
 	/* Go over data file again. */
@@ -593,7 +602,7 @@ read_photo (const char* fname)
 
 	    }
 
-		uint32_t red_4, green_4, blue_4, rgb_4, rgb_2, palette_index_4;
+		int red_4, green_4, blue_4, rgb_4, rgb_2, palette_index_4;
 		/* Get the 4 MSBs of each color of the current pixel. */
 		blue_4 = (pixel >> BLUE_4_OFFSET) & 0x0F;
 		green_4 = (pixel >> GREEN_4_OFFSET) & 0x0F;
@@ -631,3 +640,4 @@ int
 compare(const void *node1, const void *node2) {
 	return (((struct octree_node*)node2)->count - ((struct octree_node*)node1)->count);
 }
+
