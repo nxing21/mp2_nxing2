@@ -503,6 +503,7 @@ read_photo (const char* fname)
 		green = (pixel >> GREEN_OFFSET) & 0x3F;
 		red = (pixel >> RED_OFFSET) & 0x1F;
 		uint32_t red_4, green_4, blue_4;
+		/* Extract the 4 MSBs of each color. */
 		blue_4 = (pixel >> BLUE_4_OFFSET) & 0x0F;
 		green_4 = (pixel >> GREEN_4_OFFSET) & 0x0F;
 		red_4 = (pixel >> RED_4_OFFSET) & 0x0F;
