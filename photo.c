@@ -75,6 +75,15 @@ struct image_t {
     uint8_t*       img;                 /* pixel data               */
 };
 
+struct octree_node {
+	uint32_t red_sum;
+	uint32_t green_sum;
+	uint32_t blue_sum;
+	uint32_t count;
+	uint32_t index;
+	uint32_t rgb;
+};
+
 
 /* file-scope variables */
 
@@ -317,6 +326,8 @@ prep_room (const room_t* r)
 {
     /* Record the current room. */
     cur_room = r;
+	/* Set palette for the room. */
+	set_palette_color((unsigned char*)room_photo(r)->palette);
 }
 
 
@@ -444,6 +455,26 @@ read_photo (const char* fname)
 	return NULL;
     }
 
+	/*	Initialize the octree	*/
+	struct octree_node lvl_2[LENGTH_LVL_2];
+	struct octree_node lvl_4[LENGTH_LVL_4];
+	int i; // loop counter
+	/*	Initialize sums and count to 0. Also initialize index of lvl_4 octree to -1. */
+	for (i = 0; i < LENGTH_LVL_2; i++) {
+		lvl_2[i].red_sum = 0;
+		lvl_2[i].green_sum = 0;
+		lvl_2[i].blue_sum = 0;
+		lvl_2[i].count = 0;
+	}
+	for (i = 0; i < LENGTH_LVL_4; i++) {
+		lvl_4[i].red_sum = 0;
+		lvl_4[i].green_sum = 0;
+		lvl_4[i].blue_sum = 0;
+		lvl_4[i].count = 0;
+		lvl_4[i].index = -1;
+	}
+
+	
     /* 
      * Loop over rows from bottom to top.  Note that the file is stored
      * in this order, whereas in memory we store the data in the reverse
@@ -465,6 +496,35 @@ read_photo (const char* fname)
 		return NULL;
 
 	    }
+
+		uint32_t red, green, blue;
+		/* Extract the red (5 bits), green (6 bits), and blue (5 bits) of the current pixel. */
+		blue = pixel & 0x1F;
+		green = (pixel >> GREEN_OFFSET) & 0x3F;
+		red = (pixel >> RED_OFFSET) & 0x1F;
+		uint32_t red_4, green_4, blue_4;
+		blue_4 = (pixel >> BLUE_4_OFFSET) & 0x0F;
+		green_4 = (pixel >> GREEN_4_OFFSET) & 0x0F;
+		red_4 = (pixel >> RED_4_OFFSET) & 0x0F;
+		uint32_t lvl_4_index, lvl_2_index;
+		/* Get the level 4 index (4 MSBs of each color) and level 2 index (2 MSBs of each color). */
+		lvl_4_index = blue_4 | (green_4 << LVL_4_OFFSET) | (red_4 << (LVL_4_OFFSET * 2)); // green is 1 offset away, while red is 2
+		lvl_2_index = (blue_4 >> GET_LVL_2) | ((green_4 >> GET_LVL_2) << LVL_2_OFFSET) | ((red_4 >> GET_LVL_2) << (LVL_2_OFFSET * 2)); // green is 1 offset away, while red is 2
+
+		/* Update the counter and sums for level 4. */
+		lvl_4[lvl_4_index].red_sum += red;
+		lvl_4[lvl_4_index].green_sum += green;
+		lvl_4[lvl_4_index].blue_sum += blue;
+		lvl_4[lvl_4_index].count++;
+		/* Save the rgb value because we need it after sorting. */
+		lvl_4[lvl_4_index].rgb = lvl_4_index;
+
+		/* Update the counter and sums for level 2. */
+		lvl_2[lvl_2_index].red_sum += red;
+		lvl_2[lvl_2_index].green_sum += green;
+		lvl_2[lvl_2_index].blue_sum += blue;
+		lvl_2[lvl_2_index].count++;
+
 	    /* 
 	     * 16-bit pixel is coded as 5:6:5 RGB (5 bits red, 6 bits green,
 	     * and 6 bits blue).  We change to 2:2:2, which we've set for the
@@ -476,15 +536,97 @@ read_photo (const char* fname)
 	     * the game puts up a photo, you should then change the palette 
 	     * to match the colors needed for that photo.
 	     */
-	    p->img[p->hdr.width * y + x] = (((pixel >> 14) << 4) |
-					    (((pixel >> 9) & 0x3) << 2) |
-					    ((pixel >> 3) & 0x3));
+		/* This was using the palette from Checkpoint 2.1, so we get rid of it. */
+	    // p->img[p->hdr.width * y + x] = (((pixel >> 14) << 4) |
+		// 			    (((pixel >> 9) & 0x3) << 2) |
+		// 			    ((pixel >> 3) & 0x3));
 	}
     }
+
+	/* Sort the octree */
+	qsort(lvl_4, LENGTH_LVL_4, sizeof(struct octree_node), compare);
+	/* Write to the palette */
+	for (i = 0; i < PALETTE_LVL_4; i++) {
+		lvl_4[lvl_4[i].rgb].index = i; // save the palette index because we need it after sorting
+		if (lvl_4[i].count == 0) {
+			continue; // avoid divide by 0 error
+		}
+		// 0 corresponds to red, 1 corresponds to green, 2 corresponds to blue
+		p->palette[i][0] = lvl_4[i].red_sum / lvl_4[i].count << 1; // get the average (5 bits) then shift left to add a 0 at the end for the palette
+		p->palette[i][1] = lvl_4[i].green_sum / lvl_4[i].count; // get the average (6 bits)
+		p->palette[i][2] = lvl_4[i].blue_sum / lvl_4[i].count << 1; // get the average (5 bits) then shift left to add a 0 at the end for the palette
+	}
+
+	/* Continue writing to the palette */
+	for (i = 0; i < LENGTH_LVL_2; i++) {
+		if (lvl_2[i].count == 0) {
+			continue; // avoid divide by 0 error
+		}
+		// 0 corresponds to red, 1 corresponds to green, 2 corresponds to blue
+		p->palette[i+PALETTE_LVL_4][0] = lvl_2[i].red_sum / lvl_2[i].count << 1; // get the average (5 bits) then shift left to add a 0 at the end for the palette
+		p->palette[i+PALETTE_LVL_4][1] = lvl_2[i].green_sum / lvl_2[i].count; // get the average (6 bits)
+		p->palette[i+PALETTE_LVL_4][2] = lvl_2[i].blue_sum / lvl_2[i].count << 1; // get the average (5 bits) then shift left to add a 0 at the end for the palette
+	}
+
+	/* Go over data file again. */
+	fseek(in, sizeof(p->hdr), SEEK_SET);
+
+	/* 
+     * Loop over rows from bottom to top.  Note that the file is stored
+     * in this order, whereas in memory we store the data in the reverse
+     * order (top to bottom).
+     */
+    for (y = p->hdr.height; y-- > 0; ) {
+
+	/* Loop over columns from left to right. */
+	for (x = 0; p->hdr.width > x; x++) {
+		/* 
+	     * Try to read one 16-bit pixel.  On failure, clean up and 
+	     * return NULL.
+	     */
+	    if (1 != fread (&pixel, sizeof (pixel), 1, in)) {
+		free (p->img);
+		free (p);
+	        (void)fclose (in);
+		return NULL;
+
+	    }
+
+		uint32_t red_4, green_4, blue_4, rgb_4, rgb_2, palette_index_4;
+		/* Get the 4 MSBs of each color of the current pixel. */
+		blue_4 = (pixel >> BLUE_4_OFFSET) & 0x0F;
+		green_4 = (pixel >> GREEN_4_OFFSET) & 0x0F;
+		red_4 = (pixel >> RED_4_OFFSET) & 0x0F;
+		/* Get the level 4 index (4 MSBs of each color). */
+		rgb_4 = blue_4 | (green_4 << LVL_4_OFFSET) | (red_4 << (LVL_4_OFFSET * 2)); // green is 1 offset away, while red is 2
+		/* Get the level 2 index (2 MSBs of each color). */
+		rgb_2 = (blue_4 >> GET_LVL_2) | ((green_4 >> GET_LVL_2) << LVL_2_OFFSET) | ((red_4 >> GET_LVL_2) << (LVL_2_OFFSET * 2)); // green is 1 offset away, while red is 2
+
+		palette_index_4 = lvl_4[rgb_4].index; // Get the index of the palette of the level 4 section (it will be -1 if it was not in the palette)
+		if (palette_index_4 == -1) { // check if the color was not in the level 4 section of the palette (-1 if not)
+			p->img[p->hdr.width * y + x] = rgb_2 + PALETTE_LVL_4 + PALETTE_START; // if it isn't, use the color from level 2 section of palette and draw to image
+			continue;
+		}
+		p->img[p->hdr.width * y + x] = palette_index_4 + PALETTE_START; // draw the color from the level 4 section of palette to the image
+		
+	}
+	}
 
     /* All done.  Return success. */
     (void)fclose (in);
     return p;
 }
 
-
+/* 
+ * compare
+ *   DESCRIPTION: comparison to be used for qsort
+ *   INPUTS: node1, node2
+ *   OUTPUTS: none
+ *   RETURN VALUE: positive number if count of node 2 is greater than count of node 1
+ * 				   negative number if less, or 0 if equal
+ *   SIDE EFFECTS: comparator for the qsort function
+ */
+int
+compare(const void *node1, const void *node2) {
+	return (((struct octree_node*)node2)->count - ((struct octree_node*)node1)->count);
+}

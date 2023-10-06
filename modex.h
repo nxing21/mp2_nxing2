@@ -60,6 +60,7 @@
 #define SCROLL_Y_DIM    IMAGE_Y_DIM                /* full image width      */
 #define SCROLL_X_WIDTH  (IMAGE_X_DIM / 4)          /* addresses (bytes)     */
 #define STATUS_BAR_HEIGHT	18	/* the height of the status bar				*/
+#define PALETTE_SIZE	192	/* size of the palette							*/
 
 /*
  * NOTES
@@ -138,5 +139,7 @@ extern int draw_horiz_line (int y);
 
 /* draw a vertical line at horizontal pixel x within the logical view window */
 extern int draw_vert_line (int x);
+
+void set_palette_color (unsigned char* palette_RGB);
 
 #endif /* MODEX_H */

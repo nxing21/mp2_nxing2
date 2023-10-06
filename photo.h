@@ -52,6 +52,23 @@
 #define MAX_OBJECT_WIDTH  160
 #define MAX_OBJECT_HEIGHT 100
 
+/* octree level sizes */
+#define LENGTH_LVL_2  64
+#define LENGTH_LVL_4  4096
+
+/* palette indexing helpers */
+#define PALETTE_START   64
+#define PALETTE_LVL_4   128
+
+/* RGB indexing helpers */
+#define GREEN_OFFSET    5
+#define RED_OFFSET      11
+#define BLUE_4_OFFSET   1
+#define GREEN_4_OFFSET  7
+#define RED_4_OFFSET    12
+#define LVL_4_OFFSET    4
+#define GET_LVL_2       2
+#define LVL_2_OFFSET    2
 
 /* Fill a buffer with the pixels for a horizontal line of current room. */
 extern void fill_horiz_buffer (int x, int y, unsigned char buf[SCROLL_X_DIM]);
@@ -82,6 +99,8 @@ extern image_t* read_obj_image (const char* fname);
 
 /* Read room photo from a file into a dynamically allocated structure. */
 extern photo_t* read_photo (const char* fname);
+
+int compare (const void *node1, const void *node2);
 
 /* 
  * N.B.  I'm aware that Valgrind and similar tools will report the fact that
