@@ -30,8 +30,13 @@
 	printk(KERN_DEBUG "%s: " str, __FUNCTION__, ## __VA_ARGS__)
 
 unsigned char leds;
-unsigned char buttons[2];
-static spinlock_t lock = SPIN_LOCK_UNLOCKED;
+unsigned char buttons;
+int ack_flag;
+// static spinlock_t lock = SPIN_LOCK_UNLOCKED;
+
+int tux_init_ioctl(struct tty_struct* tty);
+int set_led_ioctl(struct tty_struct* tty, unsigned long arg);
+int tux_buttons_ioctl(struct tty_struct* tty, unsigned long * arg);
 
 /************************ Protocol Implementation *************************/
 
@@ -50,10 +55,15 @@ void tuxctl_handle_packet (struct tty_struct* tty, unsigned char* packet)
 
 	switch(a) {
 		case MTCP_BIOC_EVENT:
-			buttons[0] = b;
-			buttons[1] = c;
+			buttons = b;
+			unsigned temp = 0;
+			temp |= (c & 0x09) << 4;
+			temp |= (c & 0x02) << 5;
+			temp |= (c & 0x04) << 3;
+			buttons |= temp;
 			break;
 		case MTCP_ACK:
+			ack = 1;
 			break;
 		case MTCP_CLK_RESET:
 			break;
@@ -85,7 +95,7 @@ tuxctl_ioctl (struct tty_struct* tty, struct file* file,
 	case TUX_INIT:
 		return tux_init_ioctl(tty);
 	case TUX_BUTTONS:
-		return tux_buttons_ioctl(tty, arg);
+		return tux_buttons_ioctl(tty, (unsigned long *) arg);
 	case TUX_SET_LED:
 		return set_led_ioctl(tty, arg);
 	case TUX_LED_ACK:
@@ -101,54 +111,70 @@ tuxctl_ioctl (struct tty_struct* tty, struct file* file,
 
 /* Initializes any variables associated with the driver and returns 0. */
 int tux_init_ioctl(struct tty_struct* tty) {
-	int num_bytes = 1;
+	ack_flag = 1;
+	int num_bytes = 2;
 	unsigned char buf[num_bytes];
 	buf[0] = MTCP_BIOC_ON;
+	buf[1] = MTCP_LED_USR;
 	tuxctl_ldisc_put(tty, buf, num_bytes);
+	ioctl(fd, TUX_SET_LED, 0xF4F70000);
+	buttons = 0xFF;
 	return 0;
 }
 
-int set_led_ioctl(struct tty_struct* tty, unsigned long arg) {
-	unsigned int num_bytes, led_on, get_cur_led, decimal_points, cur_led, cur_segment, num_off;
+/*	The hex values corresponding to the 7 segment display of each hex value from 0 to F.	*/
+unsigned char led_segments[16] = {0xE7, 0x06, 0xCB, 0x8F, 0x2E, 0xAD, 0xED, 0x86, 0xEF, 0xAF, 0xEE, 0x6D, 0xE1, 0x4F, 0xE9, 0xE8};
 
-	num_bytes = 2;	// start with 2 bytes guaranteed, will be incremented based on number of LEDs that are on
-	int i;	// loop counter
+int set_led_ioctl(struct tty_struct* tty, unsigned long arg) {
+	if (!ack_flag) {
+		return 0;
+	}
+	ack_flag = 0;
+	unsigned int num_bytes = 2;
+	unsigned int led_on, get_cur_led, decimal_points, cur_led, cur_segment;
+	int i;
+	unsigned char buf[NUM_LEDS + num_bytes];
+	
 	led_on = (arg >> 16) & 0x0F;
 
 	leds = arg;
-	unsigned char buf[NUM_LEDS + num_bytes];
 
-	buf[0] = MTCP_LED_SET;	//	opcode
+	buf[0] = MTCP_LED_SET;	// opcode
 	buf[1] = 0x0F;
 
 	get_cur_led = 0x0F;	// bitwise & with this to get cur_led
 	decimal_points = arg >> 24;
-
-	/*	The hex values corresponding to the 7 segment display of each hex value from 0 to F.	*/
-	unsigned char led_segments = {0xE7, 0x06, 0xCB, 0x8F, 0x2E, 0xAD, 0xED, 0x86, 0xEF, 0xAF, 0xEE, 0x6D, 0xE1, 0x4F, 0xE9, 0xE8};
 
 	for (i = 0; i < NUM_LEDS; i++) {
 		if (led_on & 0x01) {	// this means the LED is on
 			cur_led = get_cur_led & arg;
 			cur_segment = led_segments[cur_led];
 			cur_segment |= ((decimal_points & 0x01) << 4);
-			buf[num_bytes] = cur_segment;
-			num_bytes++;
+			buf[i + num_bytes] = cur_segment;
+		}
+		else {
+			buf[i + num_bytes] = 0x00;
 		}
 		led_on >>= 1;
 		arg >>= 4;
 		decimal_points >>= 1;
 	}
-	tuxctl_ldisc_put(tty, buf, num_bytes);
+	tuxctl_ldisc_put(tty, buf, NUM_LEDS + num_bytes);
 	return 0;
 }
 
-int tux_buttons_ioctl(struct tty_struct* tty, unsigned long arg) {
-	if (*arg == NULL) {
+int tux_buttons_ioctl(struct tty_struct* tty, unsigned long * arg) {
+	if (!ack_flag) {
+		return 0;
+	}
+	ack_flag = 0;
+	if (arg == NULL) {
 		return -EINVAL;
 	}
 
-	copy_to_user(arg, &buttons, 1);
+	if (copy_to_user(arg, &buttons, 1) > 0) {
+		return -EINVAL;
+	}
 
 
 	return 0;

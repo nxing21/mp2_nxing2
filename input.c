@@ -56,6 +56,7 @@
 
 #include "assert.h"
 #include "input.h"
+#include "module/tuxctl-ioctl.h"
 
 /* set to 1 and compile this file by itself to test functionality */
 #define TEST_INPUT_DRIVER 0
@@ -85,9 +86,6 @@ static int fd;
 int
 init_input ()
 {
-	fd = open("/dev/ttyS0", O_RDWR | O_NOCTTY);
-	int ldisc_num = N_MOUSE;
-	ioctl(fd, TIOCSETD, &ldisc_num);
     struct termios tio_new;
 
     /*
@@ -313,9 +311,9 @@ shutdown_input ()
 void
 display_time_on_tux (int num_seconds)
 {
-#if (USE_TUX_CONTROLLER != 0)
-#error "Tux controller code is not operational yet."
-#endif
+// #if (USE_TUX_CONTROLLER != 0)
+// #error "Tux controller code is not operational yet."
+// #endif
 }
 
 
@@ -323,6 +321,14 @@ display_time_on_tux (int num_seconds)
 int
 main ()
 {
+
+	fd = open("/dev/ttyS0", O_RDWR | O_NOCTTY);
+	int ldisc_num = N_MOUSE;
+	ioctl(fd, TIOCSETD, &ldisc_num);
+
+	ioctl(fd, TUX_INIT, 0);
+	ioctl(fd, TUX_SET_LED, 0xFFF5BADF);
+
     cmd_t last_cmd = CMD_NONE;
     cmd_t cmd;
     static const char* const cmd_name[NUM_COMMANDS] = {

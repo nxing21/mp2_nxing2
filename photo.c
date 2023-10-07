@@ -80,7 +80,6 @@ struct octree_node {
 	int green_sum;
 	int blue_sum;
 	int count;
-	int index;
 	int rgb;
 };
 
@@ -458,6 +457,8 @@ read_photo (const char* fname)
 	/*	Initialize the octree	*/
 	struct octree_node lvl_2[LENGTH_LVL_2];
 	struct octree_node lvl_4[LENGTH_LVL_4];
+	/*	Array used to keep track of indexes which will be lost after sorting.	*/
+	int mapping[LENGTH_LVL_4];
 	int i; // loop counter
 	/*	Initialize sums and count to 0. Also initialize index of lvl_4 octree to -1. */
 	for (i = 0; i < LENGTH_LVL_2; i++) {
@@ -471,7 +472,7 @@ read_photo (const char* fname)
 		lvl_4[i].green_sum = 0;
 		lvl_4[i].blue_sum = 0;
 		lvl_4[i].count = 0;
-		lvl_4[i].index = -1;
+		mapping[i] = -1; // initialize all mapping indexes to -1
 	}
 
 	
@@ -481,7 +482,6 @@ read_photo (const char* fname)
      * order (top to bottom).
      */
     for (y = p->hdr.height; y-- > 0; ) {
-
 	/* Loop over columns from left to right. */
 	for (x = 0; p->hdr.width > x; x++) {
 
@@ -550,7 +550,7 @@ read_photo (const char* fname)
 	for (i = 0; i < PALETTE_LVL_4; i++) {
 		int rgb_lvl_4;
 		rgb_lvl_4 = lvl_4[i].rgb;
-		lvl_4[rgb_lvl_4].index = i; // save the palette index because we need it after sorting
+		mapping[rgb_lvl_4] = i; // store the index for later
 		int rgb_lvl_2;
 		rgb_lvl_2 = ((rgb_lvl_4 >> GET_LVL_2) & 0x03) | (((rgb_lvl_4 >> (GET_LVL_2 + LVL_4_OFFSET)) & 0x03) << LVL_2_OFFSET) | (((rgb_lvl_4 >> (GET_LVL_2 + LVL_4_OFFSET * 2)) & 0x03) << (LVL_2_OFFSET * 2)); // green is 1 offset away, while red is 2
 		/* Need to remove the level 4 pixel's contribution to the level 2 of the octree. */
@@ -559,6 +559,10 @@ read_photo (const char* fname)
 		lvl_2[rgb_lvl_2].green_sum -= lvl_4[i].green_sum;
 		lvl_2[rgb_lvl_2].blue_sum -= lvl_4[i].blue_sum;
 		if (lvl_4[i].count == 0) {
+			/* Set palette to 0 if there is no count. */
+			p->palette[i][0] = 0;
+			p->palette[i][1] = 0;
+			p->palette[i][2] = 0;
 			continue; // avoid divide by 0 error
 		}
 		// 0 corresponds to red, 1 corresponds to green, 2 corresponds to blue
@@ -570,6 +574,10 @@ read_photo (const char* fname)
 	/* Continue writing to the palette */
 	for (i = 0; i < LENGTH_LVL_2; i++) {
 		if (lvl_2[i].count == 0) {
+			/* Set palette to 0 if there is no count. */
+			p->palette[i+PALETTE_LVL_4][0] = 0;
+			p->palette[i+PALETTE_LVL_4][1] = 0;
+			p->palette[i+PALETTE_LVL_4][2] = 0;
 			continue; // avoid divide by 0 error
 		}
 		// 0 corresponds to red, 1 corresponds to green, 2 corresponds to blue
@@ -612,13 +620,12 @@ read_photo (const char* fname)
 		/* Get the level 2 index (2 MSBs of each color). */
 		rgb_2 = (blue_4 >> GET_LVL_2) | ((green_4 >> GET_LVL_2) << LVL_2_OFFSET) | ((red_4 >> GET_LVL_2) << (LVL_2_OFFSET * 2)); // green is 1 offset away, while red is 2
 
-		palette_index_4 = lvl_4[rgb_4].index; // Get the index of the palette of the level 4 section (it will be -1 if it was not in the palette)
+		palette_index_4 = mapping[rgb_4]; // get the palette index from the mapping array
 		if (palette_index_4 == -1) { // check if the color was not in the level 4 section of the palette (-1 if not)
 			p->img[p->hdr.width * y + x] = rgb_2 + PALETTE_LVL_4 + PALETTE_START; // if it isn't, use the color from level 2 section of palette and draw to image
 			continue;
 		}
 		p->img[p->hdr.width * y + x] = palette_index_4 + PALETTE_START; // draw the color from the level 4 section of palette to the image
-		
 	}
 	}
 

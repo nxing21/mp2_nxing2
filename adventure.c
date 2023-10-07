@@ -43,12 +43,23 @@
 #include <sys/time.h>
 #include <time.h>
 
+#include <ctype.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/io.h>
+#include <termio.h>
+#include <termios.h>
+#include <unistd.h>
+
 #include "assert.h"
 #include "input.h"
 #include "modex.h"
 #include "photo.h"
 #include "text.h"
 #include "world.h"
+#include "module/tuxctl-ioctl.h"
 
 
 /*
@@ -149,6 +160,8 @@ static int time_is_after (struct timeval* t1, struct timeval* t2);
 /* file-scope variables */
 
 static game_info_t game_info; /* game information */
+static int timer;
+static int fd;
 
 
 /* 
@@ -278,6 +291,26 @@ game_loop ()
 	    if ((tick_time.tv_usec += TICK_USEC) > 1000000) {
 		tick_time.tv_sec++;
 		tick_time.tv_usec -= 1000000;
+
+		timer++;
+
+		/* Convert from timer to led display. */
+		int min_ones, min_tens, seconds_ones, seconds_tens;
+		min_ones = (timer / 60) % 10;
+		min_tens = (timer / 60) / 10;
+		seconds_ones = timer % 10;
+		seconds_tens = (timer % 60) / 10;
+		int led_display;
+		led_display = 0xF4F70000;
+		led_display |= seconds_ones;
+		led_display |= (seconds_tens << 4);
+		led_display |= (min_ones << 8);
+		led_display |= (min_tens << 12);
+		if (min_tens > 0) {
+			led_display |= 0x80000;
+		}
+		ioctl(fd, TUX_INIT, 0);
+		ioctl(fd, TUX_SET_LED, led_display);
 	    }
 	} while (time_is_after (&cur_time, &tick_time));
 
@@ -748,6 +781,12 @@ int
 main ()
 {
     game_condition_t game;  /* outcome of playing */
+
+	timer = 590;
+
+	fd = open("/dev/ttyS0", O_RDWR | O_NOCTTY);
+	int ldisc_num = N_MOUSE;
+	ioctl(fd, TIOCSETD, &ldisc_num);
 
     /* Randomize for more fun (remove for deterministic layout). */
     srand (time (NULL));
