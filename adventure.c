@@ -297,9 +297,9 @@ game_loop ()
 		/* Convert from timer to led display. */
 		int min_ones, min_tens, seconds_ones, seconds_tens;
 		min_ones = (timer / 60) % 10;
-		min_tens = (timer / 60) / 10;
+		min_tens = ((timer / 60) / 10) % 10;
 		seconds_ones = timer % 10;
-		seconds_tens = (timer % 60) / 10;
+		seconds_tens = ((timer % 60) / 10);
 		int led_display;
 		led_display = 0xF4F70000;
 		led_display |= seconds_ones;
@@ -782,7 +782,7 @@ main ()
 {
     game_condition_t game;  /* outcome of playing */
 
-	timer = 590;
+	timer = 5995;
 
 	fd = open("/dev/ttyS0", O_RDWR | O_NOCTTY);
 	int ldisc_num = N_MOUSE;
