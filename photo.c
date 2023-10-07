@@ -553,11 +553,6 @@ read_photo (const char* fname)
 		mapping[rgb_lvl_4] = i; // store the index for later
 		int rgb_lvl_2;
 		rgb_lvl_2 = ((rgb_lvl_4 >> GET_LVL_2) & 0x03) | (((rgb_lvl_4 >> (GET_LVL_2 + LVL_4_OFFSET)) & 0x03) << LVL_2_OFFSET) | (((rgb_lvl_4 >> (GET_LVL_2 + LVL_4_OFFSET * 2)) & 0x03) << (LVL_2_OFFSET * 2)); // green is 1 offset away, while red is 2
-		/* Need to remove the level 4 pixel's contribution to the level 2 of the octree. */
-		lvl_2[rgb_lvl_2].count -= lvl_4[i].count;
-		lvl_2[rgb_lvl_2].red_sum -= lvl_4[i].red_sum;
-		lvl_2[rgb_lvl_2].green_sum -= lvl_4[i].green_sum;
-		lvl_2[rgb_lvl_2].blue_sum -= lvl_4[i].blue_sum;
 		if (lvl_4[i].count == 0) {
 			/* Set palette to 0 if there is no count. */
 			p->palette[i][0] = 0;
@@ -569,6 +564,16 @@ read_photo (const char* fname)
 		p->palette[i][0] = (lvl_4[i].red_sum / lvl_4[i].count) << 1; // get the average (5 bits) then shift left to add a 0 at the end for the palette
 		p->palette[i][1] = lvl_4[i].green_sum / lvl_4[i].count; // get the average (6 bits)
 		p->palette[i][2] = (lvl_4[i].blue_sum / lvl_4[i].count) << 1; // get the average (5 bits) then shift left to add a 0 at the end for the palette
+
+		/* Need to remove the level 4 pixel's contribution to the level 2 of the octree. */
+		lvl_2[rgb_lvl_2].count -= lvl_4[i].count;
+		lvl_2[rgb_lvl_2].red_sum -= lvl_4[i].red_sum;
+		lvl_2[rgb_lvl_2].green_sum -= lvl_4[i].green_sum;
+		lvl_2[rgb_lvl_2].blue_sum -= lvl_4[i].blue_sum;
+		lvl_4[i].count = 0;
+		lvl_4[i].red_sum = 0;
+		lvl_4[i].green_sum = 0;
+		lvl_4[i].blue_sum = 0;
 	}
 
 	/* Continue writing to the palette */

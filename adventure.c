@@ -162,6 +162,7 @@ static int time_is_after (struct timeval* t1, struct timeval* t2);
 static game_info_t game_info; /* game information */
 static int timer;
 static int fd;
+static unsigned long buttons, previous_buttons;
 
 
 /* 
@@ -298,7 +299,6 @@ game_loop ()
 	    }
 	} while (time_is_after (&cur_time, &tick_time));
 
-	unsigned long buttons;
 	ioctl(fd, TUX_BUTTONS, &buttons);
 	switch (buttons) {
 	    case 0xFF:	break;
@@ -306,20 +306,30 @@ game_loop ()
 	    case 0x7F: 	move_photo_left ();		break;
 	    case 0xDF:  move_photo_up ();		break;
 	    case 0xBF:  move_photo_right ();	break;
-	    case 0xFD:   
+	    case 0xFD:  
+		if (previous_buttons == buttons) {
+			break;
+		}
 		enter_room = (TC_CHANGE_ROOM == 
 			      try_to_move_left (&game_info.where));
 		break;
 	    case 0xFB:
+		if (previous_buttons == buttons) {
+			break;
+		}
 		enter_room = (TC_CHANGE_ROOM ==
 			      try_to_enter (&game_info.where));
 		break;
 	    case 0xF7:
+		if (previous_buttons == buttons) {
+			break;
+		}
 		enter_room = (TC_CHANGE_ROOM == 
 			      try_to_move_right (&game_info.where));
 		break;
 	    default: break;
 	}
+	previous_buttons = buttons;
 
 	/*
 	 * Handle asynchronous events.  These events use real time rather

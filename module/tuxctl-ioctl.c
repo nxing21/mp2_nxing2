@@ -61,8 +61,8 @@ void tuxctl_handle_packet (struct tty_struct* tty, unsigned char* packet)
 			ack_flag = 1;
 			break;
 		case MTCP_RESET:
-			tux_init_ioctl(tty);
 			tux_set_led_ioctl(tty, leds);
+			tux_init_ioctl(tty);
 			break;
 		default:
 			break;
