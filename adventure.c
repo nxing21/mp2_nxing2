@@ -309,7 +309,7 @@ game_loop ()
 		if (min_tens > 0) {
 			led_display |= 0x80000;
 		}
-		ioctl(fd, TUX_INIT, 0);
+		//ioctl(fd, TUX_INIT, 0);
 		ioctl(fd, TUX_SET_LED, led_display);
 	    }
 	} while (time_is_after (&cur_time, &tick_time));
@@ -353,6 +353,31 @@ game_loop ()
 	    case CMD_QUIT: return GAME_QUIT;
 	    default: break;
 	}
+
+	// unsigned long buttons;
+	// ioctl(fd, TUX_BUTTONS, &buttons);
+	// switch (buttons) {
+	//     case 0xFF:	break;
+	// 	case 0xEF:	move_photo_down ();		ioctl(fd, TUX_SET_LED, 0xFFFFAAAA);break;
+	//     case 0x7F: 	move_photo_left ();		ioctl(fd, TUX_SET_LED, 0xFFFFBBBB);break;
+	//     case 0xDF:  move_photo_up ();		ioctl(fd, TUX_SET_LED, 0xFFFFCCCC);break;
+	//     case 0xBF:  move_photo_right ();	ioctl(fd, TUX_SET_LED, 0xFFFFDDDD);break;
+	//     case 0xFD:   
+	// 	enter_room = (TC_CHANGE_ROOM == 
+	// 		      try_to_move_left (&game_info.where));
+	// 	break;
+	//     case 0xFB:
+	// 	enter_room = (TC_CHANGE_ROOM ==
+	// 		      try_to_enter (&game_info.where));
+	// 	break;
+	//     case 0xF7:
+	// 	enter_room = (TC_CHANGE_ROOM == 
+	// 		      try_to_move_right (&game_info.where));
+	// 	break;
+	//     default: break;
+	// }
+
+
 
 	/* If player wins the game, their room becomes NULL. */
 	if (NULL == game_info.where) {
@@ -782,7 +807,8 @@ main ()
 {
     game_condition_t game;  /* outcome of playing */
 
-	timer = 5995;
+	timer = 0;
+	ioctl(fd, TUX_INIT, 0);
 
 	fd = open("/dev/ttyS0", O_RDWR | O_NOCTTY);
 	int ldisc_num = N_MOUSE;
