@@ -55,7 +55,7 @@ void tuxctl_handle_packet (struct tty_struct* tty, unsigned char* packet)
 
 	switch(a) {
 		case MTCP_BIOC_EVENT:
-			buttons = b | (c & 0x09) << 4 | (c & 0x02) << 5 | (c & 0x04) << 3;
+			buttons = (b & 0x0F) | ((c & 0x09) << 4) | ((c & 0x02) << 5) | ((c & 0x04) << 3);
 			break;
 		case MTCP_ACK:
 			ack_flag = 1;
@@ -161,10 +161,6 @@ int tux_set_led_ioctl(struct tty_struct* tty, unsigned long arg) {
 }
 
 int tux_buttons_ioctl(struct tty_struct* tty, unsigned long * arg) {
-	if (!ack_flag) {
-		return 0;
-	}
-	ack_flag = 0;
 	if (arg == NULL) {
 		return -EINVAL;
 	}

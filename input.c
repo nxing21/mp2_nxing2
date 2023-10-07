@@ -314,6 +314,26 @@ display_time_on_tux (int num_seconds)
 // #if (USE_TUX_CONTROLLER != 0)
 // #error "Tux controller code is not operational yet."
 // #endif
+		/* Convert from timer to led display. */
+		int min_ones, min_tens, seconds_ones, seconds_tens;
+		fd = open("/dev/ttyS0", O_RDWR | O_NOCTTY);
+		int ldisc_num = N_MOUSE;
+		ioctl(fd, TIOCSETD, &ldisc_num);
+		min_ones = (num_seconds / 60) % 10;
+		min_tens = ((num_seconds / 60) / 10) % 10;
+		seconds_ones = num_seconds % 10;
+		seconds_tens = ((num_seconds % 60) / 10);
+		int led_display;
+		led_display = 0xF4F70000;
+		led_display |= seconds_ones;
+		led_display |= (seconds_tens << 4);
+		led_display |= (min_ones << 8);
+		led_display |= (min_tens << 12);
+		if (min_tens > 0) {
+			led_display |= 0x80000;
+		}
+		//ioctl(fd, TUX_INIT, 0);
+		ioctl(fd, TUX_SET_LED, led_display);
 }
 
 
