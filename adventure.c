@@ -160,7 +160,6 @@ static int time_is_after (struct timeval* t1, struct timeval* t2);
 /* file-scope variables */
 
 static game_info_t game_info; /* game information */
-static int timer;
 static int fd;
 static unsigned long buttons;
 static int buttons_pressed;
@@ -302,10 +301,6 @@ game_loop ()
 	    if ((tick_time.tv_usec += TICK_USEC) > 1000000) {
 		tick_time.tv_sec++;
 		tick_time.tv_usec -= 1000000;
-
-		timer++;
-
-		display_time_on_tux(timer);
 	    }
 	} while (time_is_after (&cur_time, &tick_time));
 
@@ -321,7 +316,9 @@ game_loop ()
 	 * Note that typed commands that move objects may cause the room
 	 * to be redrawn.
 	 */
-
+	if (cur_time.tv_sec - start_time.tv_sec != 0) {
+		display_time_on_tux(cur_time.tv_sec - start_time.tv_sec);
+	}
 
 	buttons_pressed = 0;
 	buttons = get_command_tux ();
@@ -824,9 +821,6 @@ int
 main ()
 {
     game_condition_t game;  /* outcome of playing */
-
-	timer = 0;
-	ioctl(fd, TUX_INIT, 0);
 
 	fd = open("/dev/ttyS0", O_RDWR | O_NOCTTY);
 	int ldisc_num = N_MOUSE;

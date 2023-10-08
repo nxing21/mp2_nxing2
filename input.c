@@ -123,6 +123,7 @@ init_input ()
 	fd = open("/dev/ttyS0", O_RDWR | O_NOCTTY);
 	int ldisc_num = N_MOUSE;
 	ioctl(fd, TIOCSETD, &ldisc_num);
+	ioctl(fd, TUX_INIT);
 
     /* Return success. */
     return 0;

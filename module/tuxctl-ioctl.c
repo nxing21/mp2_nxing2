@@ -114,7 +114,6 @@ int tux_init_ioctl(struct tty_struct* tty) {
 	buf[0] = MTCP_BIOC_ON;
 	buf[1] = MTCP_LED_USR;
 	tuxctl_ldisc_put(tty, buf, num_bytes);
-	buttons = 0xFF;
 	return 0;
 }
 
