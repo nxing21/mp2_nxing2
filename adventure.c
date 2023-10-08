@@ -145,6 +145,7 @@ static const typed_cmd_t cmd_list[] = {
 /* local functions--see function headers for details */
 
 static void cancel_status_thread (void* ignore);
+static void cancel_tux_thread (void* ignore);
 static game_condition_t game_loop (void);
 static int32_t handle_typing (void);
 static void init_game (void);
@@ -154,16 +155,17 @@ static void move_photo_right (void);
 static void move_photo_up (void);
 static void redraw_room (void);
 static void* status_thread (void* ignore);
+static void* tux_thread (void* ignore);
 static int time_is_after (struct timeval* t1, struct timeval* t2);
 
 
 /* file-scope variables */
 
 static game_info_t game_info; /* game information */
-static int fd;
-static unsigned long buttons;
-static int buttons_pressed;
-static int32_t enter_room;      /* player has changed rooms        */
+static int fd;					/* used to open Tux controller */
+static unsigned long buttons;	/* command to be executed */
+static int buttons_pressed;		/* 0 if no buttons pressed, 1 if there is buttons pressed */
+static int32_t enter_room;      /* player has changed rooms */
 
 
 /* 
@@ -185,6 +187,11 @@ static pthread_mutex_t msg_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  msg_cv = PTHREAD_COND_INITIALIZER;
 static char status_msg[STATUS_MSG_LEN + 1] = {'\0'};
 
+/* 
+ * These variables are used to keep track of the tux helper thread.
+ * The lock should be acquired before updating the game. If a button
+ * is pressed, the thread is notified with the cv (while holding lock).
+ */
 static pthread_t tux_thread_id;
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t cv = PTHREAD_COND_INITIALIZER;
@@ -205,6 +212,15 @@ cancel_status_thread (void* ignore)
     (void)pthread_cancel (status_thread_id);
 }
 
+/* 
+ * cancel_status_thread
+ *   DESCRIPTION: Terminates the tux helper thread.  Used as
+ *                a cleanup method to ensure proper shutdown.
+ *   INPUTS: none (ignored)
+ *   OUTPUTS: none
+ *   RETURN VALUE: none
+ *   SIDE EFFECTS: none
+ */
 static void
 cancel_tux_thread (void* ignore)
 {
@@ -317,48 +333,49 @@ game_loop ()
 	 * to be redrawn.
 	 */
 	if (cur_time.tv_sec - start_time.tv_sec != 0) {
+		/* Display the current time if it isn't 0 (same behavior as demo). */
 		display_time_on_tux(cur_time.tv_sec - start_time.tv_sec);
 	}
 
-	buttons_pressed = 0;
-	buttons = get_command_tux ();
+	buttons_pressed = 0; // keep track of if button is pressed
+	buttons = get_command_tux (); // get the next command to be executed to send to thread
 	if (buttons != CMD_NONE) {
-		buttons_pressed = 1;
+		buttons_pressed = 1; // set buttons_pressed variable if there is a command to be executed
 	}
 
 	pthread_mutex_lock(&lock);
 	if (buttons_pressed) {
-		pthread_cond_signal(&cv);
+		pthread_cond_signal(&cv); // if button was pressed, send signal to thread that a command needs to be executed
 	}
 	pthread_mutex_unlock(&lock);
-	if (!buttons_pressed) {
-		cmd = get_command ();
-		switch (cmd) {
-			case CMD_UP:    move_photo_down ();  break;
-			case CMD_RIGHT: move_photo_left ();  break;
-			case CMD_DOWN:  move_photo_up ();    break;
-			case CMD_LEFT:  move_photo_right (); break;
-			case CMD_MOVE_LEFT:   
-			enter_room = (TC_CHANGE_ROOM == 
-					try_to_move_left (&game_info.where));
-			break;
-			case CMD_ENTER:
-			enter_room = (TC_CHANGE_ROOM ==
-					try_to_enter (&game_info.where));
-			break;
-			case CMD_MOVE_RIGHT:
-			enter_room = (TC_CHANGE_ROOM == 
-					try_to_move_right (&game_info.where));
-			break;
-			case CMD_TYPED:
-			if (handle_typing ()) {
-				enter_room = 1;
-			}
-			break;
-			case CMD_QUIT: return GAME_QUIT;
-			default: break;
+
+	cmd = get_command ();
+	switch (cmd) {
+		case CMD_UP:    move_photo_down ();  break;
+		case CMD_RIGHT: move_photo_left ();  break;
+		case CMD_DOWN:  move_photo_up ();    break;
+		case CMD_LEFT:  move_photo_right (); break;
+		case CMD_MOVE_LEFT:   
+		enter_room = (TC_CHANGE_ROOM == 
+				try_to_move_left (&game_info.where));
+		break;
+		case CMD_ENTER:
+		enter_room = (TC_CHANGE_ROOM ==
+				try_to_enter (&game_info.where));
+		break;
+		case CMD_MOVE_RIGHT:
+		enter_room = (TC_CHANGE_ROOM == 
+				try_to_move_right (&game_info.where));
+		break;
+		case CMD_TYPED:
+		if (handle_typing ()) {
+			enter_room = 1;
 		}
+		break;
+		case CMD_QUIT: return GAME_QUIT;
+		default: break;
 	}
+	
 
 	/* If player wins the game, their room becomes NULL. */
 	if (NULL == game_info.where) {
@@ -656,15 +673,26 @@ redraw_room ()
     }
 }
 
+/* 
+ * tux_thread
+ *   DESCRIPTION: Function executed by tux helper thread.
+ *                Waits for a button to be pressed, then
+ * 				  updates the game accordingly.
+ *   INPUTS: none (ignored)
+ *   OUTPUTS: none
+ *   RETURN VALUE: NULL
+ *   SIDE EFFECTS: Updates the game based on which button is pressed.
+ */
 static void*
 tux_thread (void* ignore)
 {
 	while (1) {
 		pthread_mutex_lock(&lock);
 		while (!buttons_pressed) {
-			pthread_cond_wait(&cv, &lock);
+			pthread_cond_wait(&cv, &lock); // sleep until button is pressed
 		}
 
+		/* Execute the next command (similar to keyboard commands, but without typing or quit game commands). */
 		switch (buttons) {
 			case CMD_UP:    move_photo_down ();  break;
 			case CMD_RIGHT: move_photo_left ();  break;
@@ -684,7 +712,7 @@ tux_thread (void* ignore)
 			break;
 			default: break;
 		}
-		buttons_pressed = 0;
+		buttons_pressed = 0; // reset button pressed
 		pthread_mutex_unlock(&lock);
 	}
 	return NULL;

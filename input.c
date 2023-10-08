@@ -68,8 +68,13 @@
 /* stores original terminal settings */
 static struct termios tio_orig;
 
-static int fd;
-static cmd_t buttons_previous;
+static int fd;	/* used to open Tux controller */
+static cmd_t buttons_previous;	/* used to keep track of previous button pressed */
+
+/* variables to help with LED display logic */
+#define MINUTES	60
+#define SECONDS	10
+#define LED_OFFSET	4
 
 
 /* 
@@ -120,9 +125,11 @@ init_input ()
 	return -1;
     }
 
+	/* Open the Tux controller */
 	fd = open("/dev/ttyS0", O_RDWR | O_NOCTTY);
 	int ldisc_num = N_MOUSE;
 	ioctl(fd, TIOCSETD, &ldisc_num);
+	/* Initialize the Tux controller */
 	ioctl(fd, TUX_INIT);
 
     /* Return success. */
@@ -168,39 +175,47 @@ typed_a_char (char c)
 cmd_t
 get_command_tux ()
 {
+	/* Call the ioctl, which copies the command to be executed. */
 	unsigned char buttons;
 	ioctl(fd, TUX_BUTTONS, &buttons);
 	switch (buttons) {
-	    case 0xFF:	buttons_previous = CMD_NONE;	break;
-		case 0xEF:	buttons_previous = CMD_UP;		break;
-	    case 0x7F: 	buttons_previous = CMD_RIGHT;	break;
-	    case 0xDF:  buttons_previous = CMD_DOWN;	break;
-	    case 0xBF:  buttons_previous = CMD_LEFT;	break;
-	    case 0xFD:   
+		/* For each case, the bit that is 0 represents the button that was pressed */
+		/* according to this order RIGHT|LEFT|DOWN|UP|C|B|A|START */
+	    case 0xFF:	buttons = CMD_NONE;		break; /* no command was executed */
+		case 0xEF:	buttons = CMD_UP;		break; /* 4th MSB is 0, corresponds to up */
+	    case 0x7F: 	buttons = CMD_RIGHT;	break; /* 1st MSB is 0, corresponds to right */
+	    case 0xDF:  buttons = CMD_DOWN;		break; /* 3rd MSB is 0, corresponds to down */
+	    case 0xBF:  buttons = CMD_LEFT;		break; /* 2nd MSB is 0, corresponds to left */
+	    case 0xFD:  /* 7th MSB is 0, corresponds to A */
 			if (buttons_previous == CMD_MOVE_LEFT) {
-				buttons_previous = CMD_MOVE_LEFT;
+				/* If previous was the same, we do not want to execute the command (do not want press and hold)
+				 * so we return CMD_NONE
+				 */
 				return CMD_NONE;
 			}
-			buttons_previous = CMD_MOVE_LEFT;
+			buttons = CMD_MOVE_LEFT;
 			break;
-	    case 0xFB:
+	    case 0xFB:	/* 6th MSB is 0, corresponds to B */
 			if (buttons_previous == CMD_ENTER) {
-				buttons_previous = CMD_ENTER;
+				// If previous was the same, we do not want to execute the command (do not want press and hold)
+				// so we return CMD_NONE
 				return CMD_NONE;
 			}
-			buttons_previous = CMD_ENTER;
+			buttons = CMD_ENTER;
 			break;
-	    case 0xF7:
+	    case 0xF7:	/* 5th MSB is 0, corresponds to C */
 			if (buttons_previous == CMD_MOVE_RIGHT) {
-				buttons_previous = CMD_MOVE_RIGHT;
+				// If previous was the same, we do not want to execute the command (do not want press and hold)
+				// so we return CMD_NONE
 				return CMD_NONE;
 			}
-			buttons_previous = CMD_MOVE_RIGHT;
+			buttons = CMD_MOVE_RIGHT;
 			break;
 	    default: break;
 	}
-
-	return buttons_previous;
+	// update buttons_previous to current command
+	buttons_previous = buttons;
+	return buttons;
 }
 
 /* 
@@ -359,21 +374,25 @@ display_time_on_tux (int num_seconds)
 // #error "Tux controller code is not operational yet."
 // #endif
 		/* Convert from timer to led display. */
-		int min_ones, min_tens, seconds_ones, seconds_tens;
-		min_ones = (num_seconds / 60) % 10;
-		min_tens = ((num_seconds / 60) / 10) % 10;
-		seconds_ones = num_seconds % 10;
-		seconds_tens = ((num_seconds % 60) / 10);
+		int min_tens, min_ones, seconds_tens, seconds_ones;	// keep track of what is needed to be printed at each LED, respectively
 		int led_display;
-		led_display = 0xF4F70000;
+		/* Calculations for what number to show on the LED. */
+		min_ones = (num_seconds / MINUTES) % SECONDS;
+		min_tens = ((num_seconds / MINUTES) / SECONDS) % SECONDS;
+		seconds_ones = num_seconds % SECONDS;
+		seconds_tens = ((num_seconds % MINUTES) / SECONDS);
+		/* Only the second decimal place is on. Also, three rightmost LEDs are guaranteed to be on. */
+		led_display = 0xF4F70000; // hex value corresponding to above
+		/* Logic to write what's needed to be printed to the led_display variable. */
 		led_display |= seconds_ones;
-		led_display |= (seconds_tens << 4);
-		led_display |= (min_ones << 8);
-		led_display |= (min_tens << 12);
+		led_display |= (seconds_tens << LED_OFFSET); // 1 offset away
+		led_display |= (min_ones << LED_OFFSET * 2); // 2 offsets away
+		led_display |= (min_tens << LED_OFFSET * 3); // 3 offsets away
+		/* Turn the leftmost LED on if it has been 10 minutes or over. */
 		if (min_tens > 0) {
-			led_display |= 0x80000;
+			led_display |= 0x80000; // turn the LED on corresponding to the leftmost LED
 		}
-		//ioctl(fd, TUX_INIT, 0);
+		/* Set the LED. */
 		ioctl(fd, TUX_SET_LED, led_display);
 }
 

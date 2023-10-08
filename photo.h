@@ -69,6 +69,7 @@
 #define LVL_4_OFFSET    4
 #define GET_LVL_2       2
 #define LVL_2_OFFSET    2
+#define SHIFT_ONE       1
 
 /* Fill a buffer with the pixels for a horizontal line of current room. */
 extern void fill_horiz_buffer (int x, int y, unsigned char buf[SCROLL_X_DIM]);

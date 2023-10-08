@@ -29,12 +29,18 @@
 #define debug(str, ...) \
 	printk(KERN_DEBUG "%s: " str, __FUNCTION__, ## __VA_ARGS__)
 
+/* Global variables used to keep track of LED state and button state */
 unsigned char leds;
 unsigned char buttons;
+
+/* Ack flag used to protect LEDs*/
 int ack_flag;
+
+/* Lock and flags used to protect buttons. */
 static spinlock_t lock = SPIN_LOCK_UNLOCKED;
 unsigned long flags;
 
+/* Ioctl function declarations. */
 int tux_init_ioctl(struct tty_struct* tty);
 int tux_set_led_ioctl(struct tty_struct* tty, unsigned long arg);
 int tux_buttons_ioctl(struct tty_struct* tty, unsigned long * arg);
@@ -56,14 +62,17 @@ void tuxctl_handle_packet (struct tty_struct* tty, unsigned char* packet)
 
 	switch(a) {
 		case MTCP_BIOC_EVENT:
+			/* Lock to protect buttons */
 			spin_lock_irqsave(&lock, flags);
-			buttons = (b & 0x0F) | ((c & 0x09) << 4) | ((c & 0x02) << 5) | ((c & 0x04) << 3);
+			/* buttons is in this order: RIGHT|LEFT|DOWN|UP|C|B|A|START. Used logic to get proper buttons variable */
+			buttons = (b & FOUR_BIT_MASK) | ((c & GET_RIGHT_AND_UP) << SHIFT_RIGHT_AND_UP) | ((c & GET_LEFT) << SHIFT_LEFT) | ((c & GET_DOWN) << SHIFT_DOWN);
 			spin_unlock_irqrestore(&lock, flags);
 			break;
 		case MTCP_ACK:
-			ack_flag = 1;
+			ack_flag = 1; // reset ack_flag back to 1 after command is completed
 			break;
 		case MTCP_RESET:
+			/* Return Tux to usable state */
 			tux_set_led_ioctl(tty, leds);
 			tux_init_ioctl(tty);
 			break;
@@ -87,6 +96,16 @@ void tuxctl_handle_packet (struct tty_struct* tty, unsigned char* packet)
  * valid.                                                                     *
  *                                                                            *
  ******************************************************************************/
+
+/* 
+ * tuxctl_ioctl
+ *   DESCRIPTION: Main ioctl which checks the input command, and calls
+ * 				  the proper helper function
+ *   INPUTS: tty, file, cmd, arg
+ *   OUTPUTS: none
+ *   RETURN VALUE: 0 if successful, -EINVAL if failed
+ *   SIDE EFFECTS: Executes the proper command.
+ */
 int 
 tuxctl_ioctl (struct tty_struct* tty, struct file* file, 
 	      unsigned cmd, unsigned long arg)
@@ -109,13 +128,20 @@ tuxctl_ioctl (struct tty_struct* tty, struct file* file,
     }
 }
 
-/* Initializes any variables associated with the driver and returns 0. */
+/* 
+ * tux_init_ioctl
+ *   DESCRIPTION: Initializes any variables associated with the driver and returns 0.
+ *   INPUTS: tty
+ *   OUTPUTS: none
+ *   RETURN VALUE: 0
+ *   SIDE EFFECTS: Enable Button interrupt-on-change. Put the LED display into user-mode.
+ */
 int tux_init_ioctl(struct tty_struct* tty) {
-	int num_bytes = 2;
+	int num_bytes = 2; // 2 bytes for MTCP_BIOC_ON and MTCP_LED_USR
 	unsigned char buf[num_bytes];
 	buf[0] = MTCP_BIOC_ON;
 	buf[1] = MTCP_LED_USR;
-	ack_flag = 0;
+	ack_flag = 0; // initialize ack_flag to 0
 	tuxctl_ldisc_put(tty, buf, num_bytes);
 	return 0;
 }
@@ -123,53 +149,77 @@ int tux_init_ioctl(struct tty_struct* tty) {
 /*	The hex values corresponding to the 7 segment display of each hex value from 0 to F.	*/
 unsigned char led_segments[16] = {0xE7, 0x06, 0xCB, 0x8F, 0x2E, 0xAD, 0xED, 0x86, 0xEF, 0xAE, 0xEE, 0x6D, 0xE1, 0x4F, 0xE9, 0xE8};
 
+/* 
+ * tux_set_led_ioctl
+ *   DESCRIPTION: Takes a 32-bit integer as argument. 
+ * 				  Creates buffer for LEDs according to the input.
+ *   INPUTS: tty, arg
+ *   OUTPUTS: none
+ *   RETURN VALUE: 0
+ *   SIDE EFFECTS: Creates a buffer for LEDs according to the input.
+ * 				   Updates global LED variable.
+ */
 int tux_set_led_ioctl(struct tty_struct* tty, unsigned long arg) {
-	unsigned int num_bytes = 2;
-	unsigned int led_on, get_cur_led, decimal_points, cur_led, cur_segment;
-	int i;
+	unsigned int num_bytes = 2; // two bytes for opcode and LED states
+	unsigned int led_on, get_cur_led, decimal_points, cur_led, cur_segment; // variables to help with this function
+	int i; // loop counter
 	unsigned char buf[NUM_LEDS + num_bytes];
 	
+	/* Check ack_flag */
 	if (!ack_flag) {
+		/* If ack_flag is 0, do not proceed */
 		return 0;
 	}
-	ack_flag = 0;
-	led_on = (arg >> 16) & 0x0F;
-
+	ack_flag = 0; // set ack_flag to 0 before proceeding
+	led_on = (arg >> ARG_SHIFT) & FOUR_BIT_MASK;
+	/* Update the LED global variable */
 	leds = arg;
 
 	buf[0] = MTCP_LED_SET;	// opcode
 	buf[1] = 0x0F;
 
 	get_cur_led = 0x0F;	// bitwise & with this to get cur_led
-	decimal_points = arg >> 24;
+	decimal_points = arg >> DECIMAL_SHIFT;
 
 	for (i = 0; i < NUM_LEDS; i++) {
-		if (led_on & 0x01) {	// this means the LED is on
+		if (led_on & GET_LSB) {	// this means the LED is on
 			cur_led = get_cur_led & arg;
 			cur_segment = led_segments[cur_led];
-			cur_segment |= ((decimal_points & 0x01) << 4);
+			cur_segment |= ((decimal_points & GET_LSB) << NUM_BITS_LED);
 			buf[i + num_bytes] = cur_segment;
 		}
 		else {
-			buf[i + num_bytes] = 0x00;
+			buf[i + num_bytes] = 0x00; // 0x00 is a blank LED (nothing is on)
 		}
-		led_on >>= 1;
-		arg >>= 4;
-		decimal_points >>= 1;
+		/* Go to next LED */
+		led_on >>= LED_NEXT;
+		arg >>= ARG_NEXT;
+		decimal_points >>= DECIMAL_NEXT;
 	}
 	tuxctl_ldisc_put(tty, buf, NUM_LEDS + num_bytes);
 	return 0;
 }
 
+/* 
+ * tux_buttons_ioctl
+ *   DESCRIPTION: Takes pointer to 32-bit integer. Copy the buttons
+ * 				  global variable to the user
+ *   INPUTS: tty, arg
+ *   OUTPUTS: -EINVAL if pointer is invalid of failed copying, otherwise 0
+ *   RETURN VALUE: 0
+ *   SIDE EFFECTS: Copy buttons variable to user, or -EINVAL if failed
+ */
 int tux_buttons_ioctl(struct tty_struct* tty, unsigned long * arg) {
 	unsigned long output;
 	if (arg == NULL) {
 		return -EINVAL;
 	}
+	/* Lock used to protect buttons */
 	spin_lock_irqsave(&lock, flags);
-	output = copy_to_user(arg, &buttons, 1);
+	output = copy_to_user(arg, &buttons, 1); // copy buttons variable to user
 	spin_unlock_irqrestore(&lock, flags);
 
+	/* return -EINVAL if there are bytes that failed to be copied */
 	if (output > 0) {
 		return -EINVAL;
 	}

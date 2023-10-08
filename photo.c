@@ -499,12 +499,12 @@ read_photo (const char* fname)
 
 		int red, green, blue;
 		/* Extract the red, green, and blue bits of the current pixel (6 bits each, add 0 to the end of blue and red). */
-		blue = (pixel & 0x1F) << 1;
+		blue = (pixel & 0x1F) << SHIFT_ONE; // 0x1F is a 5-bit mask, 0x3F is a 6-bit mask
 		green = (pixel >> GREEN_OFFSET) & 0x3F;
-		red = ((pixel >> RED_OFFSET) & 0x1F) << 1;
+		red = ((pixel >> RED_OFFSET) & 0x1F) << SHIFT_ONE;
 		int red_4, green_4, blue_4;
 		/* Extract the 4 MSBs of each color. */
-		blue_4 = (pixel >> BLUE_4_OFFSET) & 0x0F;
+		blue_4 = (pixel >> BLUE_4_OFFSET) & 0x0F; // 0x0F is a 4-bit mask
 		green_4 = (pixel >> GREEN_4_OFFSET) & 0x0F;
 		red_4 = (pixel >> RED_4_OFFSET) & 0x0F;
 		int lvl_4_index, lvl_2_index;
@@ -570,10 +570,6 @@ read_photo (const char* fname)
 		lvl_2[rgb_lvl_2].red_sum -= lvl_4[i].red_sum;
 		lvl_2[rgb_lvl_2].green_sum -= lvl_4[i].green_sum;
 		lvl_2[rgb_lvl_2].blue_sum -= lvl_4[i].blue_sum;
-		lvl_4[i].count = 0;
-		lvl_4[i].red_sum = 0;
-		lvl_4[i].green_sum = 0;
-		lvl_4[i].blue_sum = 0;
 	}
 
 	/* Continue writing to the palette */
@@ -617,7 +613,7 @@ read_photo (const char* fname)
 
 		int red_4, green_4, blue_4, rgb_4, rgb_2, palette_index_4;
 		/* Get the 4 MSBs of each color of the current pixel. */
-		blue_4 = (pixel >> BLUE_4_OFFSET) & 0x0F;
+		blue_4 = (pixel >> BLUE_4_OFFSET) & 0x0F; // 0x0F is a 4 bit mask
 		green_4 = (pixel >> GREEN_4_OFFSET) & 0x0F;
 		red_4 = (pixel >> RED_4_OFFSET) & 0x0F;
 		/* Get the level 4 index (4 MSBs of each color). */
