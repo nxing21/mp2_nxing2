@@ -32,7 +32,8 @@
 unsigned char leds;
 unsigned char buttons;
 int ack_flag;
-// static spinlock_t lock = SPIN_LOCK_UNLOCKED;
+static spinlock_t lock = SPIN_LOCK_UNLOCKED;
+unsigned long flags;
 
 int tux_init_ioctl(struct tty_struct* tty);
 int tux_set_led_ioctl(struct tty_struct* tty, unsigned long arg);
@@ -55,7 +56,9 @@ void tuxctl_handle_packet (struct tty_struct* tty, unsigned char* packet)
 
 	switch(a) {
 		case MTCP_BIOC_EVENT:
+			spin_lock_irqsave(&lock, flags);
 			buttons = (b & 0x0F) | ((c & 0x09) << 4) | ((c & 0x02) << 5) | ((c & 0x04) << 3);
+			spin_unlock_irqrestore(&lock, flags);
 			break;
 		case MTCP_ACK:
 			ack_flag = 1;
@@ -159,11 +162,15 @@ int tux_set_led_ioctl(struct tty_struct* tty, unsigned long arg) {
 }
 
 int tux_buttons_ioctl(struct tty_struct* tty, unsigned long * arg) {
+	unsigned long output;
 	if (arg == NULL) {
 		return -EINVAL;
 	}
+	spin_lock_irqsave(&lock, flags);
+	output = copy_to_user(arg, &buttons, 1);
+	spin_unlock_irqrestore(&lock, flags);
 
-	if (copy_to_user(arg, &buttons, 1) > 0) {
+	if (output > 0) {
 		return -EINVAL;
 	}
 
