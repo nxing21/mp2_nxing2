@@ -110,9 +110,9 @@ tuxctl_ioctl (struct tty_struct* tty, struct file* file,
 int tux_init_ioctl(struct tty_struct* tty) {
 	int num_bytes = 2;
 	unsigned char buf[num_bytes];
-	ack_flag = 1;
 	buf[0] = MTCP_BIOC_ON;
 	buf[1] = MTCP_LED_USR;
+	ack_flag = 0;
 	tuxctl_ldisc_put(tty, buf, num_bytes);
 	return 0;
 }
