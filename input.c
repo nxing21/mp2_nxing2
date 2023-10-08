@@ -69,6 +69,7 @@
 static struct termios tio_orig;
 
 static int fd;
+static cmd_t buttons_previous;
 
 
 /* 
@@ -119,6 +120,10 @@ init_input ()
 	return -1;
     }
 
+	fd = open("/dev/ttyS0", O_RDWR | O_NOCTTY);
+	int ldisc_num = N_MOUSE;
+	ioctl(fd, TIOCSETD, &ldisc_num);
+
     /* Return success. */
     return 0;
 }
@@ -157,6 +162,44 @@ typed_a_char (char c)
 	typing[len] = c;
 	typing[len + 1] = '\0';
     }
+}
+
+cmd_t
+get_command_tux ()
+{
+	unsigned char buttons;
+	ioctl(fd, TUX_BUTTONS, &buttons);
+	switch (buttons) {
+	    case 0xFF:	buttons_previous = CMD_NONE;	break;
+		case 0xEF:	buttons_previous = CMD_UP;		break;
+	    case 0x7F: 	buttons_previous = CMD_RIGHT;	break;
+	    case 0xDF:  buttons_previous = CMD_DOWN;	break;
+	    case 0xBF:  buttons_previous = CMD_LEFT;	break;
+	    case 0xFD:   
+		if (buttons_previous == CMD_MOVE_LEFT) {
+			buttons_previous = CMD_MOVE_LEFT;
+			return CMD_NONE;
+		}
+		buttons_previous = CMD_MOVE_LEFT;
+		break;
+	    case 0xFB:
+		if (buttons_previous == CMD_ENTER) {
+			buttons_previous = CMD_ENTER;
+			return CMD_NONE;
+		}
+		buttons_previous = CMD_ENTER;
+		break;
+	    case 0xF7:
+		if (buttons_previous == CMD_MOVE_RIGHT) {
+			buttons_previous = CMD_MOVE_RIGHT;
+			return CMD_NONE;
+		}
+		buttons_previous = CMD_MOVE_RIGHT;
+		break;
+	    default: break;
+	}
+
+	return buttons_previous;
 }
 
 /* 
@@ -316,9 +359,6 @@ display_time_on_tux (int num_seconds)
 // #endif
 		/* Convert from timer to led display. */
 		int min_ones, min_tens, seconds_ones, seconds_tens;
-		fd = open("/dev/ttyS0", O_RDWR | O_NOCTTY);
-		int ldisc_num = N_MOUSE;
-		ioctl(fd, TIOCSETD, &ldisc_num);
 		min_ones = (num_seconds / 60) % 10;
 		min_tens = ((num_seconds / 60) / 10) % 10;
 		seconds_ones = num_seconds % 10;
