@@ -498,10 +498,10 @@ read_photo (const char* fname)
 	    }
 
 		int red, green, blue;
-		/* Extract the red (5 bits), green (6 bits), and blue (5 bits) of the current pixel. */
-		blue = pixel & 0x1F;
+		/* Extract the red, green, and blue bits of the current pixel (6 bits each, add 0 to the end of blue and red). */
+		blue = (pixel & 0x1F) << 1;
 		green = (pixel >> GREEN_OFFSET) & 0x3F;
-		red = (pixel >> RED_OFFSET) & 0x1F;
+		red = ((pixel >> RED_OFFSET) & 0x1F) << 1;
 		int red_4, green_4, blue_4;
 		/* Extract the 4 MSBs of each color. */
 		blue_4 = (pixel >> BLUE_4_OFFSET) & 0x0F;
@@ -561,9 +561,9 @@ read_photo (const char* fname)
 			continue; // avoid divide by 0 error
 		}
 		// 0 corresponds to red, 1 corresponds to green, 2 corresponds to blue
-		p->palette[i][0] = (lvl_4[i].red_sum / lvl_4[i].count) << 1; // get the average (5 bits) then shift left to add a 0 at the end for the palette
+		p->palette[i][0] = (lvl_4[i].red_sum / lvl_4[i].count); // get the average (5 bits) then shift left to add a 0 at the end for the palette
 		p->palette[i][1] = lvl_4[i].green_sum / lvl_4[i].count; // get the average (6 bits)
-		p->palette[i][2] = (lvl_4[i].blue_sum / lvl_4[i].count) << 1; // get the average (5 bits) then shift left to add a 0 at the end for the palette
+		p->palette[i][2] = (lvl_4[i].blue_sum / lvl_4[i].count); // get the average (5 bits) then shift left to add a 0 at the end for the palette
 
 		/* Need to remove the level 4 pixel's contribution to the level 2 of the octree. */
 		lvl_2[rgb_lvl_2].count -= lvl_4[i].count;
@@ -586,9 +586,9 @@ read_photo (const char* fname)
 			continue; // avoid divide by 0 error
 		}
 		// 0 corresponds to red, 1 corresponds to green, 2 corresponds to blue
-		p->palette[i+PALETTE_LVL_4][0] = (lvl_2[i].red_sum / lvl_2[i].count) << 1; // get the average (5 bits) then shift left to add a 0 at the end for the palette
+		p->palette[i+PALETTE_LVL_4][0] = (lvl_2[i].red_sum / lvl_2[i].count); // get the average (5 bits) then shift left to add a 0 at the end for the palette
 		p->palette[i+PALETTE_LVL_4][1] = lvl_2[i].green_sum / lvl_2[i].count; // get the average (6 bits)
-		p->palette[i+PALETTE_LVL_4][2] = (lvl_2[i].blue_sum / lvl_2[i].count) << 1; // get the average (5 bits) then shift left to add a 0 at the end for the palette
+		p->palette[i+PALETTE_LVL_4][2] = (lvl_2[i].blue_sum / lvl_2[i].count); // get the average (5 bits) then shift left to add a 0 at the end for the palette
 	}
 
 	/* Go over data file again. */

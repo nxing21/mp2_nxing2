@@ -176,26 +176,26 @@ get_command_tux ()
 	    case 0xDF:  buttons_previous = CMD_DOWN;	break;
 	    case 0xBF:  buttons_previous = CMD_LEFT;	break;
 	    case 0xFD:   
-		if (buttons_previous == CMD_MOVE_LEFT) {
+			if (buttons_previous == CMD_MOVE_LEFT) {
+				buttons_previous = CMD_MOVE_LEFT;
+				return CMD_NONE;
+			}
 			buttons_previous = CMD_MOVE_LEFT;
-			return CMD_NONE;
-		}
-		buttons_previous = CMD_MOVE_LEFT;
-		break;
+			break;
 	    case 0xFB:
-		if (buttons_previous == CMD_ENTER) {
+			if (buttons_previous == CMD_ENTER) {
+				buttons_previous = CMD_ENTER;
+				return CMD_NONE;
+			}
 			buttons_previous = CMD_ENTER;
-			return CMD_NONE;
-		}
-		buttons_previous = CMD_ENTER;
-		break;
+			break;
 	    case 0xF7:
-		if (buttons_previous == CMD_MOVE_RIGHT) {
+			if (buttons_previous == CMD_MOVE_RIGHT) {
+				buttons_previous = CMD_MOVE_RIGHT;
+				return CMD_NONE;
+			}
 			buttons_previous = CMD_MOVE_RIGHT;
-			return CMD_NONE;
-		}
-		buttons_previous = CMD_MOVE_RIGHT;
-		break;
+			break;
 	    default: break;
 	}
 
