@@ -499,14 +499,14 @@ read_photo (const char* fname)
 
 		int red, green, blue;
 		/* Extract the red, green, and blue bits of the current pixel (6 bits each, add 0 to the end of blue and red). */
-		blue = (pixel & 0x1F) << SHIFT_ONE; // 0x1F is a 5-bit mask, 0x3F is a 6-bit mask
-		green = (pixel >> GREEN_OFFSET) & 0x3F;
-		red = ((pixel >> RED_OFFSET) & 0x1F) << SHIFT_ONE;
+		blue = (pixel & 0x1F) << SHIFT_ONE; // 0x1F is a 5-bit mask
+		green = (pixel >> GREEN_OFFSET) & 0x3F; // 0x3F is a 6-bit mask
+		red = ((pixel >> RED_OFFSET) & 0x1F) << SHIFT_ONE; // 0x1F is a 5-bit mask
 		int red_4, green_4, blue_4;
 		/* Extract the 4 MSBs of each color. */
 		blue_4 = (pixel >> BLUE_4_OFFSET) & 0x0F; // 0x0F is a 4-bit mask
-		green_4 = (pixel >> GREEN_4_OFFSET) & 0x0F;
-		red_4 = (pixel >> RED_4_OFFSET) & 0x0F;
+		green_4 = (pixel >> GREEN_4_OFFSET) & 0x0F; // 0x0F is a 4-bit mask
+		red_4 = (pixel >> RED_4_OFFSET) & 0x0F; // 0x0F is a 4-bit mask
 		int lvl_4_index, lvl_2_index;
 		/* Get the level 4 index (4 MSBs of each color) and level 2 index (2 MSBs of each color). */
 		lvl_4_index = blue_4 | (green_4 << LVL_4_OFFSET) | (red_4 << (LVL_4_OFFSET * 2)); // green is 1 offset away, while red is 2
@@ -614,8 +614,8 @@ read_photo (const char* fname)
 		int red_4, green_4, blue_4, rgb_4, rgb_2, palette_index_4;
 		/* Get the 4 MSBs of each color of the current pixel. */
 		blue_4 = (pixel >> BLUE_4_OFFSET) & 0x0F; // 0x0F is a 4 bit mask
-		green_4 = (pixel >> GREEN_4_OFFSET) & 0x0F;
-		red_4 = (pixel >> RED_4_OFFSET) & 0x0F;
+		green_4 = (pixel >> GREEN_4_OFFSET) & 0x0F; // 0x0F is a 4 bit mask
+		red_4 = (pixel >> RED_4_OFFSET) & 0x0F; // 0x0F is a 4 bit mask
 		/* Get the level 4 index (4 MSBs of each color). */
 		rgb_4 = blue_4 | (green_4 << LVL_4_OFFSET) | (red_4 << (LVL_4_OFFSET * 2)); // green is 1 offset away, while red is 2
 		/* Get the level 2 index (2 MSBs of each color). */
