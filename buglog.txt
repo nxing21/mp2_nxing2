@@ -32,3 +32,49 @@ status bar when I was printing the room and the typed message. This bug was pret
 easy to fix, since I just had to adjust some logic in the string I was sending
 into the text_to_graphics function. It took about 30 minutes, and the fix was
 about 10 lines of code.
+
+I had an issue after I did octrees, the screen was not showing the proper image.
+Instead, it was mostly black with some random colors near the top of the screen.
+This fix was quite difficult, taking about 3-4 hours, and was fixed by changing
+and editing about 40-50 lines of code in my photo.c (mostly fixing logic with the
+octrees).
+
+I had a visual problem where the after doing the octrees, the screen was white
+wherever the color needed to be drawn was from the level 2 of the octree. This
+problem took me about 1 hour, and was fixed by changing about 20 lines in my
+photo.c by editing some logic.
+
+I had an issue where if the color was needed to be draw from level 2 in the octree,
+it was almost correct, but not exactly. I had to look really closely to notice the
+difference, but I was still concerned. This was fixed in about an hour, and it was
+an issue with averaging that took about 5 lines to fix.
+
+I had a problem with the LEDs where it was working fine when I turn them all on,
+but didn't do anything when I tried to turn at least one of them off. This fix was
+mostly simple, taking about 30 minutes, and the fix was about 20 lines of code
+(changing some bit logic).
+
+I had an issue where the timer was displaying improperly (it went to 0.0A instead of
+0.10 for 10 seconds). This was fixed in about 30 minutes, and it was an issue with
+some logic that took about 10-20 lines to fix.
+
+I had an issue when I was trying to synchronize, the buttons on the Tux emulator
+were not doing anything. This was fixed in about 1-2 hours, and I edited about 
+30-40 lines of code. It was mostly adjusting some logic with the way I was getting
+the button command in the function get_command_tux() in input.c and some logic in
+the main game loop in adventure.c.
+
+I had a bug where if I pressed and held A, B, or C, the screen would swap really
+quickly between the rooms rather than just switching once and stopping. This bug
+was somewhat easy to fix (about 40 minutes) and it required some changes in logic
+and introducing a new variable that kept track of previous state (about 30 lines).
+
+I had an issue where the Tux emulator worked fine, but only after I hit the reset
+button. This bug was quite simple, taking me about 20 minutes, and it was fixed by
+adjusting only a few lines (<5). It was fixed by calling the TUX_INIT in the input.c
+init_input() function.
+
+I had an issue where the reset button was flashing much slower compared to the demo.
+This bug was a small fix (<5 lines) but it took me a while to find the bug (about 1
+hour). The bug was fixed by changing the place in the main game loop where I called
+the display_time_on_tux() function to display the time on the LED.
