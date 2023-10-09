@@ -154,7 +154,7 @@ unsigned char led_segments[16] = {0xE7, 0x06, 0xCB, 0x8F, 0x2E, 0xAD, 0xED, 0x86
  */
 int tux_set_led_ioctl(struct tty_struct* tty, unsigned long arg) {
 	unsigned int num_bytes = 2; // two bytes for opcode and LED states
-	unsigned int led_on, get_cur_led, decimal_points, cur_led, cur_segment; // variables to help with this function
+	unsigned int led_on, decimal_points, cur_led, cur_segment; // variables to help with this function
 	int i; // loop counter
 	unsigned char buf[NUM_LEDS + num_bytes];
 	
@@ -171,19 +171,20 @@ int tux_set_led_ioctl(struct tty_struct* tty, unsigned long arg) {
 	buf[0] = MTCP_LED_SET;	// opcode
 	buf[1] = 0x0F;
 
-	get_cur_led = 0x0F;	// bitwise & with this to get cur_led
+	/* decimal point information */
 	decimal_points = arg >> DECIMAL_SHIFT;
 
 	for (i = 0; i < NUM_LEDS; i++) {
+		cur_segment = 0x00; // 0x00 initializes to blank (nothing is on)
 		if (led_on & GET_LSB) {	// this means the LED is on
-			cur_led = get_cur_led & arg;
-			cur_segment = led_segments[cur_led];
-			cur_segment |= ((decimal_points & GET_LSB) << NUM_BITS_LED);
-			buf[i + num_bytes] = cur_segment;
+			cur_led = FOUR_BIT_MASK & arg; // get current LED info
+			cur_segment = led_segments[cur_led]; // get corresponding 7-segment display
+			cur_segment |= ((decimal_points & GET_LSB) << NUM_BITS_LED); // add decimal point if necessary
 		}
 		else {
-			buf[i + num_bytes] = 0x00; // 0x00 is a blank LED (nothing is on)
+			cur_segment |= ((decimal_points & GET_LSB) << NUM_BITS_LED); // add decimal point if necessary
 		}
+		buf[i + num_bytes] = cur_segment;
 		/* Go to next LED */
 		led_on >>= LED_NEXT;
 		arg >>= ARG_NEXT;
