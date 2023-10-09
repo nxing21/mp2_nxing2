@@ -400,7 +400,7 @@ display_time_on_tux (int num_seconds)
 		led_display |= (min_tens << LED_OFFSET * 3); // 3 offsets away
 		/* Turn the leftmost LED on if it has been 10 minutes or over. */
 		if (min_tens > 0) {
-			led_display |= 0x80000; // turn the LED on corresponding to the leftmost LED
+			led_display |= 0x80000; // turn the LED on corresponding to the leftmost LED (0x80000 sets corresponding bit to 1)
 		}
 		/* Set the LED. */
 		ioctl(fd, TUX_SET_LED, led_display);
