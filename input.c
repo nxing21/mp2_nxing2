@@ -172,6 +172,16 @@ typed_a_char (char c)
     }
 }
 
+/* 
+ * get_command_tux
+ *   DESCRIPTION: Reads a command from the TUX_BUTTONS ioctl.
+ * 				  Then uses that information to determine the
+ * 				  next command to be executed
+ *   INPUTS: none
+ *   OUTPUTS: none
+ *   RETURN VALUE: command issued by the Tux controller
+ *   SIDE EFFECTS: returns next command to be issued
+ */
 cmd_t
 get_command_tux ()
 {
