@@ -169,7 +169,7 @@ int tux_set_led_ioctl(struct tty_struct* tty, unsigned long arg) {
 	leds = arg;
 
 	buf[0] = MTCP_LED_SET;	// opcode
-	buf[1] = 0x0F;
+	buf[1] = 0x0F; // set all LEDs to on (even if LED is off, decimal point may be on)
 
 	/* decimal point information */
 	decimal_points = arg >> DECIMAL_SHIFT;
