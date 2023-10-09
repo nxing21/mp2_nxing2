@@ -412,12 +412,6 @@ int
 main ()
 {
 
-	fd = open("/dev/ttyS0", O_RDWR | O_NOCTTY);
-	int ldisc_num = N_MOUSE;
-	ioctl(fd, TIOCSETD, &ldisc_num);
-
-	ioctl(fd, TUX_INIT, 0);
-	ioctl(fd, TUX_SET_LED, 0xFFF5BADF);
 
     cmd_t last_cmd = CMD_NONE;
     cmd_t cmd;
