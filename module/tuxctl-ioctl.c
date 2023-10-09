@@ -36,10 +36,6 @@ unsigned char buttons;
 /* Ack flag used to protect LEDs*/
 int ack_flag;
 
-/* Lock and flags used to protect buttons. */
-static spinlock_t lock = SPIN_LOCK_UNLOCKED;
-unsigned long flags;
-
 /* Ioctl function declarations. */
 int tux_init_ioctl(struct tty_struct* tty);
 int tux_set_led_ioctl(struct tty_struct* tty, unsigned long arg);
@@ -62,11 +58,8 @@ void tuxctl_handle_packet (struct tty_struct* tty, unsigned char* packet)
 
 	switch(a) {
 		case MTCP_BIOC_EVENT:
-			/* Lock to protect buttons */
-			spin_lock_irqsave(&lock, flags);
 			/* buttons is in this order: RIGHT|LEFT|DOWN|UP|C|B|A|START. Used logic to get proper buttons variable */
 			buttons = (b & FOUR_BIT_MASK) | ((c & GET_RIGHT_AND_UP) << SHIFT_RIGHT_AND_UP) | ((c & GET_LEFT) << SHIFT_LEFT) | ((c & GET_DOWN) << SHIFT_DOWN);
-			spin_unlock_irqrestore(&lock, flags);
 			break;
 		case MTCP_ACK:
 			ack_flag = 1; // reset ack_flag back to 1 after command is completed
@@ -210,17 +203,12 @@ int tux_set_led_ioctl(struct tty_struct* tty, unsigned long arg) {
  *   SIDE EFFECTS: Copy buttons variable to user, or -EINVAL if failed
  */
 int tux_buttons_ioctl(struct tty_struct* tty, unsigned long * arg) {
-	unsigned long output;
 	if (arg == NULL) {
 		return -EINVAL;
 	}
-	/* Lock used to protect buttons */
-	spin_lock_irqsave(&lock, flags);
-	output = copy_to_user(arg, &buttons, 1); // copy buttons variable to user
-	spin_unlock_irqrestore(&lock, flags);
 
-	/* return -EINVAL if there are bytes that failed to be copied */
-	if (output > 0) {
+	/* copy buttons variable to user, return -EINVAL if there are bytes that failed to be copied */
+	if (copy_to_user(arg, &buttons, 1) > 0) {
 		return -EINVAL;
 	}
 

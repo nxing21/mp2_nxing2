@@ -348,34 +348,35 @@ game_loop ()
 		pthread_cond_signal(&cv); // if button was pressed, send signal to thread that a command needs to be executed
 	}
 	pthread_mutex_unlock(&lock);
-
-	cmd = get_command ();
-	switch (cmd) {
-		case CMD_UP:    move_photo_down ();  break;
-		case CMD_RIGHT: move_photo_left ();  break;
-		case CMD_DOWN:  move_photo_up ();    break;
-		case CMD_LEFT:  move_photo_right (); break;
-		case CMD_MOVE_LEFT:   
-		enter_room = (TC_CHANGE_ROOM == 
-				try_to_move_left (&game_info.where));
-		break;
-		case CMD_ENTER:
-		enter_room = (TC_CHANGE_ROOM ==
-				try_to_enter (&game_info.where));
-		break;
-		case CMD_MOVE_RIGHT:
-		enter_room = (TC_CHANGE_ROOM == 
-				try_to_move_right (&game_info.where));
-		break;
-		case CMD_TYPED:
-		if (handle_typing ()) {
-			enter_room = 1;
+	/* proceed to keyboard commands if no buttons pressed */
+	if (!buttons_pressed) {
+		cmd = get_command ();
+		switch (cmd) {
+			case CMD_UP:    move_photo_down ();  break;
+			case CMD_RIGHT: move_photo_left ();  break;
+			case CMD_DOWN:  move_photo_up ();    break;
+			case CMD_LEFT:  move_photo_right (); break;
+			case CMD_MOVE_LEFT:   
+			enter_room = (TC_CHANGE_ROOM == 
+					try_to_move_left (&game_info.where));
+			break;
+			case CMD_ENTER:
+			enter_room = (TC_CHANGE_ROOM ==
+					try_to_enter (&game_info.where));
+			break;
+			case CMD_MOVE_RIGHT:
+			enter_room = (TC_CHANGE_ROOM == 
+					try_to_move_right (&game_info.where));
+			break;
+			case CMD_TYPED:
+			if (handle_typing ()) {
+				enter_room = 1;
+			}
+			break;
+			case CMD_QUIT: return GAME_QUIT;
+			default: break;
 		}
-		break;
-		case CMD_QUIT: return GAME_QUIT;
-		default: break;
 	}
-	
 
 	/* If player wins the game, their room becomes NULL. */
 	if (NULL == game_info.where) {
